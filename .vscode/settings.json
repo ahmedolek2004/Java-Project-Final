@@ -1,0 +1,4 @@
+{
+        "java.configuration.updateBuildConfiguration": "interactive",
+        "lmstudioCode.minContextLength": 16384
+}
