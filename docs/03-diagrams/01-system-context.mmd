@@ -1,0 +1,18 @@
+flowchart TB
+    Admin["Gym Administrator / Owner\n[Person]"]
+    Receptionist["Front-Desk Receptionist\n[Person]"]
+    Member["Gym Member / Trainee\n[Person]"]
+
+    System["Forge Fitness Management System\n[Software System: Desktop Java/JavaFX]\nManages members, plans, attendance, financials, and class schedules"]
+
+    Scanner["USB Barcode / QR Scanner\n[External Hardware HID Device]"]
+    Printer["Desktop Printer\n[External Hardware Device]"]
+    Storage["Local Filesystem / SQLite DB\n[Embedded File: ~/.gym-system/gym_system.db]"]
+
+    Admin -->|"Manages users, views financials, disburses payroll, configures system"| System
+    Receptionist -->|"Registers members, sells subscriptions, initiates check-in"| System
+    Member -->|"Presents QR card for facility access"| Scanner
+
+    Scanner -->|"Emulates keyboard input (Member ID + Enter)"| System
+    System -->|"Sends print jobs (QR Cards, Invoices, Reports)"| Printer
+    System <-->|"Reads and writes transactional data via JDBC"| Storage

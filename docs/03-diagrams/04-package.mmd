@@ -1,0 +1,57 @@
+flowchart TB
+    subgraph com_gym_system["com.gym.system"]
+        Launcher["Launcher\nGymApplication"]
+        
+        subgraph controller["controller"]
+            DashboardController
+            subgraph page["page"]
+                AttendancePage
+                MembersPage
+                SubscriptionsPage
+                FinancePage
+            end
+            subgraph helper["helper"]
+                PageContext
+                TableFactory
+                AppearanceHelper
+            end
+        end
+
+        subgraph service["service"]
+            AttendanceService
+            MemberService
+            SubscriptionService
+            FinanceService
+            PayrollService
+        end
+
+        subgraph dao["dao"]
+            DatabaseConnection
+            GymRepository
+            ClubRepository
+            UserRepository
+        end
+
+        subgraph model["model"]
+            Member
+            Subscription
+            User
+            Coach
+            Activity
+        end
+
+        subgraph util["util"]
+            LanguageManager
+            PasswordService
+            AlertUtils
+        end
+    end
+
+    Launcher --> controller
+    controller --> service
+    controller --> helper
+    controller --> util
+    service --> dao
+    service --> model
+    dao --> model
+    dao --> util

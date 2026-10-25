@@ -1,0 +1,48 @@
+sequenceDiagram
+    autonumber
+    actor Member
+    actor Receptionist
+    participant Scanner as USB QR Scanner (HID)
+    participant UI as AttendancePage (JavaFX)
+    participant Svc as AttendanceService
+    participant Repo as GymRepository
+    participant DB as SQLite (gym_system.db)
+
+    Member->>Scanner: Presents QR Card
+    Scanner->>UI: Keystrokes (Member ID + Enter)
+    UI->>Svc: processCheckIn(rawIdentifier)
+    
+    Svc->>Repo: findMemberById(id)
+    Repo->>DB: SELECT * FROM members WHERE id = ?
+    DB-->>Repo: Member Record
+    Repo-->>Svc: Member Entity
+
+    Svc->>Repo: hasCheckedInToday(memberId, currentDate)
+    Repo->>DB: SELECT COUNT(*) FROM attendance WHERE member_id = ? AND date(check_in_time) = date('now')
+    DB-->>Repo: Count
+    Repo-->>Svc: boolean (alreadyCheckedIn)
+
+    alt Already Checked In Today
+        Svc-->>UI: CheckInResult(REJECTED: ALREADY_CHECKED_IN_TODAY)
+        UI-->>Receptionist: Play Warning Buzz + Red Banner "Already Checked In"
+    else Not Yet Checked In
+        Svc->>Repo: getActiveSubscription(memberId)
+        Repo->>DB: SELECT * FROM subscriptions WHERE member_id = ? AND status = 'ACTIVE'
+        DB-->>Repo: Subscription Record
+        Repo-->>Svc: Subscription Entity
+
+        alt No Active Plan or Plan Expired
+            Svc-->>UI: CheckInResult(REJECTED: EXPIRED_OR_FROZEN)
+            UI-->>Receptionist: Play Error Buzz + Red Banner "No Active Plan"
+        else Valid Active Plan
+            opt Plan is SESSION_BASED
+                Svc->>Repo: decrementRemainingSessions(subId)
+                Repo->>DB: UPDATE subscriptions SET remaining_sessions = remaining_sessions - 1
+            end
+            Svc->>Repo: insertAttendance(memberId, subId, timestamp)
+            Repo->>DB: INSERT INTO attendance (member_id, subscription_id, check_in_time) VALUES (?, ?, CURRENT_TIMESTAMP)
+            DB-->>Repo: Success
+            Svc-->>UI: CheckInResult(APPROVED, Member, RemainingSessions)
+            UI-->>Receptionist: Play Green Chime + Display Member Details & Sessions Left
+        end
+    end

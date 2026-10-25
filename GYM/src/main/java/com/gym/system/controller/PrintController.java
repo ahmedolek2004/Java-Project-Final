@@ -54,6 +54,10 @@ public final class PrintController {
         }
     }
 
+    public void printInvoice(int subscriptionId) {
+        printSubscriptionInvoice(subscriptionId);
+    }
+
     public void printSubscriptionInvoice(int subscriptionId) {
         try {
             GymRepository.SubscriptionInvoice invoice = repository.subscriptionInvoice(subscriptionId);

@@ -1,0 +1,19 @@
+flowchart TD
+    Start([Receptionist selects Member to Renew / Subscribe]) --> SelectPlan[Select Plan Type: TIME_BASED or SESSION_BASED]
+    SelectPlan --> InputParams[Enter Duration Months OR Total Sessions]
+    InputParams --> SetPrice[Set Base Price]
+    SetPrice --> ApplyDiscount{Apply Discount?}
+    
+    ApplyDiscount -- Yes --> ValidateDiscount{0% <= Discount <= 100%?}
+    ValidateDiscount -- Valid --> CalcFinal[Compute Final Price = Price * 1 - Discount/100]
+    ValidateDiscount -- Invalid --> ShowError[Show Validation Error] --> SetPrice
+    ApplyDiscount -- No --> CalcFinal
+
+    CalcFinal --> CollectPayment[Confirm Cash Payment with Member]
+    CollectPayment --> BeginTx[Begin Atomic SQL Transaction]
+    BeginTx --> InsertSub[Insert Record in 'subscriptions' as ACTIVE]
+    InsertSub --> InsertPay[Insert Record in 'payments' linked to Subscription]
+    InsertPay --> CommitTx[Commit Transaction]
+    CommitTx --> PrintReceipt{Print Invoice / Receipt?}
+    PrintReceipt -- Yes --> SendPrint[Send Print Job to Printer] --> End([Operation Complete])
+    PrintReceipt -- No --> End

@@ -1,0 +1,20 @@
+Requirement ID,Requirement Name,Category,Design Document,Code Implementation,Verification Test Suite,Status
+REQ-FR-SEC-001,User PBKDF2 Authentication,Security,10-security-design.md,com.gym.system.util.PasswordService,PasswordServiceTest,VERIFIED
+REQ-FR-SEC-002,Role-Based Access Control,Security,10-security-design.md,com.gym.system.controller.helper.NavigationHelper,Manual Role Verification,VERIFIED
+REQ-FR-MEM-001,Member Registration & Profile,Member,08-database-design.md,com.gym.system.service.MemberService,MemberServiceTest,VERIFIED
+REQ-FR-MEM-002,Member Phone Uniqueness,Member,08-database-design.md,com.gym.system.dao.GymRepository,MemberServiceTest,VERIFIED
+REQ-FR-MEM-004,QR Membership Card Printing,Member,09-ui-ux-spec.md,com.gym.system.controller.PrintController,Manual Print Test,VERIFIED
+REQ-FR-SUB-001,Dual Time/Session Subscription,Subscription,05-business-rules.md,com.gym.system.service.SubscriptionService,SubscriptionServiceTest,VERIFIED
+REQ-FR-SUB-002,Discount Boundary Calculation,Subscription,05-business-rules.md,com.gym.system.service.SubscriptionService,SubscriptionServiceTest,VERIFIED
+REQ-FR-SUB-004,Subscription Freeze/Unfreeze,Subscription,08-subscription-state-machine.mmd,com.gym.system.service.SubscriptionService,SubscriptionServiceTest,VERIFIED
+REQ-FR-ATT-001,Fast USB QR Scanner Check-in,Attendance,07-attendance-sequence.mmd,com.gym.system.service.AttendanceService,AttendanceServiceTest,VERIFIED
+REQ-FR-ATT-003,Session Decrement & Auto-Expire,Attendance,05-business-rules.md,com.gym.system.service.AttendanceService,AttendanceServiceTest,VERIFIED
+REQ-FR-ATT-004,1 Check-in Per Member Per Day,Attendance,08-database-design.md,com.gym.system.dao.GymRepository,AttendanceServiceTest,VERIFIED
+REQ-FR-SCH-001,Weekly Class Timetable,Scheduling,08-database-design.md,com.gym.system.service.ScheduleService,ScheduleServiceTest,VERIFIED
+REQ-FR-FIN-001,Financial Audit & Total Income,Finance,05-business-rules.md,com.gym.system.service.FinanceService,FinanceServiceTest,VERIFIED
+REQ-FR-FIN-003,Monthly Payroll Unique Disbursement,Finance,08-database-design.md,com.gym.system.service.PayrollService,PayrollServiceTest,VERIFIED
+REQ-FR-SYS-001,1-Click Database Hot Backup,System,13-backup-recovery-flow.mmd,com.gym.system.controller.helper.DatabaseBackupHelper,BackupRestoreTest,VERIFIED
+REQ-FR-SYS-003,Excel Export with UTF-8 BOM,System,07-architecture.md,com.gym.system.controller.helper.DataExportHelper,ExportVerificationTest,VERIFIED
+REQ-NFR-I18N-001,Arabic & English Localization,I18N,09-ui-ux-spec.md,com.gym.system.util.LanguageManager,I18nResourceTest,VERIFIED
+REQ-NFR-I18N-002,Dynamic RTL Scene Inversion,UI/UX,09-ui-ux-spec.md,com.gym.system.controller.helper.AppearanceHelper,Manual UI Inspection,VERIFIED
+REQ-NFR-REL-001,100% Offline Capability,Reliability,07-architecture.md,com.gym.system.dao.DatabaseConnection,OfflineIsolationTest,VERIFIED

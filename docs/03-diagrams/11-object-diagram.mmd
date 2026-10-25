@@ -1,0 +1,17 @@
+flowchart TD
+    subgraph RuntimeSnapshot["Runtime Memory Snapshot at 2026-10-25 10:15:30"]
+        user1["adminUser: Admin\nid = 1\nusername = 'admin'\nfullName = 'Captain Tarek'\nrole = ADMIN"]
+        
+        member1["member101: Member\nid = 101\nfullName = 'Omar Khaled'\nphone = '01012345678'\ngender = 'MALE'\nmedicalNotes = 'None'"]
+        
+        sub1["sub501: Subscription\nid = 501\nmemberId = 101\nplanName = 'Boxing 12 Sessions'\nplanType = SESSION_BASED\ntotalSessions = 12\nremainingSessions = 8\nstatus = ACTIVE\nprice = 1200.0\ndiscountApplied = 10.0"]
+
+        att1["att901: Attendance\nid = 901\nmemberId = 101\nsubscriptionId = 501\ncheckInTime = '2026-10-25 10:15:30'"]
+
+        pay1["pay801: Payment\nid = 801\nmemberId = 101\nsubscriptionId = 501\namount = 1080.0\nstatus = PAID"]
+    end
+
+    member1 -->|"has active"| sub1
+    member1 -->|"logged"| att1
+    sub1 -->|"associated with"| pay1
+    att1 -->|"consumed from"| sub1

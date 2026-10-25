@@ -71,7 +71,10 @@ public final class FormDialog {
     private static String controlValue(Control control) {
         if (control instanceof TextField field) return field.getText().trim();
         if (control instanceof PasswordField field) return field.getText();
-        if (control instanceof ComboBox<?> combo) return String.valueOf(combo.getValue());
+        if (control instanceof ComboBox<?> combo) {
+            Object val = combo.getValue();
+            return val == null ? "" : String.valueOf(val);
+        }
         if (control instanceof DatePicker date) return date.getValue() == null ? "" : date.getValue().toString();
         if (control instanceof CheckBox checkBox) return Boolean.toString(checkBox.isSelected());
         return "";

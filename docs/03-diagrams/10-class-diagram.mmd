@@ -1,0 +1,77 @@
+classDiagram
+    class User {
+        -int id
+        -String username
+        -String passwordHash
+        -String fullName
+        -Role role
+        -String phone
+        -double salary
+        -boolean active
+        +hasAdminPrivileges() boolean
+    }
+
+    class Admin {
+        +Admin(...)
+    }
+
+    class Receptionist {
+        +Receptionist(...)
+    }
+
+    User <|-- Admin
+    User <|-- Receptionist
+
+    class Member {
+        -int id
+        -String fullName
+        -String phone
+        -String email
+        -String gender
+        -String medicalNotes
+        -LocalDateTime createdAt
+        +getInitials() String
+    }
+
+    class Subscription {
+        -int id
+        -int memberId
+        -String planName
+        -PlanType planType
+        -Integer durationMonths
+        -Integer totalSessions
+        -Integer remainingSessions
+        -LocalDate startDate
+        -LocalDate endDate
+        -double price
+        -double discountApplied
+        -SubscriptionStatus status
+        -Integer activityId
+        +isValidForCheckIn() boolean
+        +decrementSession() void
+    }
+
+    class MemberService {
+        -GymDataAccess repository
+        +createMember(fullName, phone, ...) Member
+        +searchMembers(query) List~Member~
+        +getMemberById(id) Optional~Member~
+    }
+
+    class SubscriptionService {
+        -GymDataAccess repository
+        +createSubscription(...) Subscription
+        +freezeSubscription(subId) void
+        +unfreezeSubscription(subId) void
+    }
+
+    class AttendanceService {
+        -GymDataAccess repository
+        +processCheckIn(rawId) CheckInResult
+        +getTodayAttendance() List~Attendance~
+    }
+
+    MemberService ..> Member
+    SubscriptionService ..> Subscription
+    AttendanceService ..> Member
+    AttendanceService ..> Subscription

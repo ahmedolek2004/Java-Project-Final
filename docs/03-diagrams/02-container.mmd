@@ -1,0 +1,27 @@
+flowchart TB
+    subgraph ForgeDesktop["Forge Fitness Desktop Application [Java 25 / OpenJFX 21]"]
+        Launcher["Launcher & Composition Root\n(Launcher.java, GymApplication.java)"]
+        UIContainer["UI Component Container\n(FXML Controllers, Page Builders, Helpers)"]
+        ServiceContainer["Core Domain Services\n(MemberService, SubscriptionService, AttendanceService, etc.)"]
+        DAOContainer["Persistence & Data Access\n(GymRepository, ClubRepository, DatabaseConnection)"]
+    end
+
+    subgraph LocalOS["Operating System Environment (Windows / Linux / macOS)"]
+        SQLiteDB[("SQLite Embedded Database\nFile: ~/.gym-system/gym_system.db\nACID compliant")]
+        Backups[("Backup Storage Folder\nVerified .db Archive")]
+        Exports["Export Directory\nUTF-8 BOM CSV / Excel"]
+    end
+
+    subgraph Peripherals["Physical Peripherals"]
+        Scanner["USB HID QR Scanner"]
+        Printer["System Printer Service"]
+    end
+
+    Scanner -->|"Keyboard Strokes"| UIContainer
+    Launcher --> UIContainer
+    UIContainer -->|"Calls methods via PageContext"| ServiceContainer
+    ServiceContainer -->|"Domain Operations"| DAOContainer
+    DAOContainer <-->|"JDBC SQL Queries"| SQLiteDB
+    UIContainer -->|"Triggers Document Print"| Printer
+    ServiceContainer -->|"1-Click Hot Backup"| Backups
+    ServiceContainer -->|"Generates CSV Reports"| Exports

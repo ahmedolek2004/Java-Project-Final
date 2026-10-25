@@ -1,0 +1,29 @@
+flowchart TB
+    GymSystem["com.gym:gym-system:1.0-SNAPSHOT\n(Target: Java 25)"]
+
+    subgraph DirectDependencies["Direct Maven Dependencies"]
+        JFXControls["org.openjfx:javafx-controls:21.0.6\n(UI Controls & Layouts)"]
+        JFXFxml["org.openjfx:javafx-fxml:21.0.6\n(FXML Loader & Bindings)"]
+        SQLiteJDBC["org.xerial:sqlite-jdbc:3.50.3.0\n(Native Embedded SQLite JDBC Driver)"]
+        ZXingCore["com.google.zxing:core:3.5.3\n(QR Code Generation & Barcode Math)"]
+        JUnitJupiter["org.junit.jupiter:junit-jupiter:5.11.4\n(Test Framework - Test Scope)"]
+    end
+
+    subgraph TransitiveDependencies["Key Transitive Dependencies"]
+        JFXGraphics["javafx-graphics:21.0.6"]
+        JFXBase["javafx-base:21.0.6"]
+        SLF4J["slf4j-api"]
+        JUnitAPI["junit-jupiter-api / engine"]
+    end
+
+    GymSystem --> JFXControls
+    GymSystem --> JFXFxml
+    GymSystem --> SQLiteJDBC
+    GymSystem --> ZXingCore
+    GymSystem -.->|Test Only| JUnitJupiter
+
+    JFXControls --> JFXGraphics
+    JFXGraphics --> JFXBase
+    JFXFxml --> JFXControls
+    SQLiteJDBC -.-> SLF4J
+    JUnitJupiter --> JUnitAPI

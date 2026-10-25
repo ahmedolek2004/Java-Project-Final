@@ -1,0 +1,52 @@
+com.gym.system
+├── GymApplication.java                    (~80-90 سطر)  ← Entry + wiring فقط
+├── Launcher.java
+│
+├── controller/
+│   ├── DashboardController.java
+│   ├── LoginController.java
+│   ├── PrintController.java
+│   ├── FormDialog.java
+│   │
+│   ├── page/                              ← صفحات الـ UI
+│   │   ├── DashboardPage.java
+│   │   ├── MembersPage.java
+│   │   ├── SubscriptionsPage.java
+│   │   ├── AttendancePage.java
+│   │   ├── SchedulePage.java
+│   │   ├── CoachesPage.java
+│   │   ├── ActivitiesPage.java
+│   │   ├── FinancePage.java
+│   │   ├── PayrollPage.java
+│   │   └── TeamPage.java
+│   │
+│   ├── form/                              ← Dialogs + forms
+│   │   ├── MemberForm.java
+│   │   ├── SubscriptionForm.java
+│   │   ├── CoachForm.java
+│   │   ├── ActivityForm.java
+│   │   ├── ScheduledClassForm.java
+│   │   ├── UserForm.java
+│   │   ├── ExpenseForm.java
+│   │   └── CheckInForm.java
+│   │
+│   └── helper/                            ← UI helpers مشتركة
+│       ├── TableFactory.java
+│       ├── MetricCardFactory.java
+│       ├── NavigationHelper.java
+│       └── AppearanceHelper.java
+│
+├── service/                               ← (جديد) Business logic خفيف
+│   ├── MemberService.java
+│   ├── SubscriptionService.java
+│   ├── AttendanceService.java
+│   ├── ScheduleService.java
+│   ├── CoachService.java
+│   ├── ActivityService.java
+│   ├── FinanceService.java
+│   ├── PayrollService.java
+│   └── TeamService.java
+│
+├── dao/ ... (زي ما هي)
+├── model/ ... (زي ما هي)
+└── util/ ... (زي ما هي + ممكن نضيف)

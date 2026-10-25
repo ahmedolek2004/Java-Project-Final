@@ -1,0 +1,9 @@
+flowchart LR
+    Source["Java 25 Source Code\n+ FXML + CSS Resources"] --> MavenCompile["mvn compile\n(maven-compiler-plugin:3.13.0)"]
+    MavenCompile --> TestPhase["mvn test\n(JUnit Jupiter 5.11.4 Engine)"]
+    
+    TestPhase -- Failures Found --> BreakBuild["Build Broken\nReport in surefire-reports"]
+    TestPhase -- Tests Pass --> PackageJar["mvn package\n(Creates Fat JAR with all dependencies)"]
+    
+    PackageJar --> JLink["jlink / jpackage Runtime\n(Bundles stripped JDK 25 + JavaFX 21)"]
+    JLink --> Installer["Final Distribution Artifacts\n- Windows .msi / .exe\n- Linux .deb\n- macOS .dmg"]

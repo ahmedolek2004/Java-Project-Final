@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> ACTIVE : Subscription Sold / Created
+
+    state ACTIVE {
+        [*] --> InGoodStanding
+        InGoodStanding --> SessionDecremented : Check-in Event
+        SessionDecremented --> InGoodStanding : Sessions > 0
+    }
+
+    ACTIVE --> FROZEN : Receptionist triggers Freeze\n(Halts entry rights, preserves balance)
+    FROZEN --> ACTIVE : Receptionist triggers Unfreeze\n(Restores entry rights)
+
+    ACTIVE --> EXPIRED : Calendar End Date Reached (TIME_BASED)\nOR Remaining Sessions == 0 (SESSION_BASED)
+    FROZEN --> EXPIRED : Administrative Expiration
+    
+    EXPIRED --> ACTIVE : Plan Renewed / Re-purchased
+    EXPIRED --> [*] : Terminated / Inactive

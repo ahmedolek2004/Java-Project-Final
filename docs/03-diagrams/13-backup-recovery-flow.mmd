@@ -1,0 +1,20 @@
+flowchart TD
+    StartBackup([Admin triggers Database Backup]) --> ChooseTarget[Select Target Backup Directory]
+    ChooseTarget --> CheckDisk[Verify Write Permissions & Available Disk Space]
+    CheckDisk -- Insufficient --> AlertErr[Show Error: Insufficient Disk Space]
+    CheckDisk -- OK --> FlushDB[Flush Pending SQLite Transactions]
+    FlushDB --> CopyFile[Stream Copy gym_system.db to gym_system_backup_TIMESTAMP.db]
+    CopyFile --> VerifyHeader{Read First 16 Bytes:\nIs 'SQLite format 3'?}
+    VerifyHeader -- No --> LogCorrupt[Alert: Backup Verification Failed]
+    VerifyHeader -- Yes --> SuccessBackup([Backup Verified & Saved Successfully])
+
+    StartRestore([Admin triggers Database Restore]) --> SelectFile[Select .db Backup File to Restore]
+    SelectFile --> ConfirmAction{Confirm Destructive Overwrite Dialog}
+    ConfirmAction -- Cancelled --> AbortRestore([Restore Aborted])
+    ConfirmAction -- Confirmed --> VerifyRestoreHeader{Is valid SQLite format?}
+    VerifyRestoreHeader -- Invalid --> AlertInvalid[Reject: File is not a valid SQLite database]
+    VerifyRestoreHeader -- Valid --> CloseConn[Close Active JDBC Connection Pool]
+    CloseConn --> AtomicReplace[Atomically Overwrite ~/.gym-system/gym_system.db]
+    AtomicReplace --> ReopenConn[Reopen JDBC Connection & Initialize]
+    ReopenConn --> ReloadUI[Reload UI & Refresh Dashboard Metrics]
+    ReloadUI --> DoneRestore([Restore Successfully Completed])

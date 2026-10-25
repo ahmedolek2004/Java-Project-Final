@@ -1,0 +1,110 @@
+erDiagram
+    users {
+        INTEGER id PK
+        TEXT username UK
+        TEXT password_hash
+        TEXT full_name
+        TEXT role
+        TEXT phone
+        REAL salary
+        INTEGER active
+        TEXT created_at
+    }
+
+    activities {
+        INTEGER id PK
+        TEXT name_ar
+        TEXT name_en
+        TEXT description
+    }
+
+    coaches {
+        INTEGER id PK
+        TEXT name
+        TEXT phone
+        INTEGER activity_id FK
+        REAL salary
+        INTEGER is_personal_trainer
+    }
+
+    members {
+        INTEGER id PK
+        TEXT full_name
+        TEXT phone UK
+        TEXT email
+        TEXT gender
+        TEXT medical_notes
+        TEXT created_at
+    }
+
+    subscriptions {
+        INTEGER id PK
+        INTEGER member_id FK
+        TEXT plan_name
+        TEXT plan_type
+        INTEGER duration_months
+        INTEGER total_sessions
+        INTEGER remaining_sessions
+        TEXT start_date
+        TEXT end_date
+        REAL price
+        REAL discount_applied
+        TEXT status
+        INTEGER activity_id FK
+    }
+
+    attendance {
+        INTEGER id PK
+        INTEGER member_id FK
+        INTEGER subscription_id FK
+        TEXT check_in_time
+    }
+
+    payments {
+        INTEGER id PK
+        INTEGER member_id FK
+        INTEGER subscription_id FK
+        TEXT description
+        REAL amount
+        TEXT payment_date
+        TEXT status
+    }
+
+    expenses {
+        INTEGER id PK
+        TEXT description
+        REAL amount
+        TEXT expense_date
+    }
+
+    payroll_payments {
+        INTEGER id PK
+        TEXT employee_type
+        INTEGER employee_id
+        TEXT employee_name
+        TEXT pay_month
+        REAL amount
+        TEXT paid_at
+    }
+
+    class_schedule {
+        INTEGER id PK
+        TEXT title
+        INTEGER activity_id FK
+        INTEGER coach_id FK
+        INTEGER day_of_week
+        TEXT start_time
+        TEXT end_time
+        INTEGER capacity
+        INTEGER active
+    }
+
+    members ||--o{ subscriptions : "purchases"
+    members ||--o{ attendance : "logs"
+    members ||--o{ payments : "makes"
+    subscriptions ||--o{ attendance : "validates"
+    subscriptions ||--o{ payments : "generates"
+    activities ||--o{ coaches : "specializes in"
+    activities ||--o{ subscriptions : "applies to"
+    activities ||--o{ class_schedule : "schedules"
+    coaches ||--o{ class_schedule : "instructs"

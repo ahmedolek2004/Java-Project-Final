@@ -1,0 +1,52 @@
+
+Forge-Fitness/
+├── README.md
+├── CHANGELOG.md
+├── docs/
+│   ├── 01-product/
+│   │   ├── project-charter.md
+│   │   ├── prd.md
+│   │   ├── srs.md
+│   │   ├── user-stories.md
+│   │   ├── business-rules.md
+│   │   └── scope-roadmap.md
+│   │
+│   ├── 02-design/
+│   │   ├── architecture.md
+│   │   ├── database-design.md
+│   │   ├── ui-ux-spec.md
+│   │   ├── security-design.md
+│   │   ├── detailed-design.md
+│   │   └── adr/
+│   │
+│   ├── 03-diagrams/
+│   │   ├── system-context.mmd
+│   │   ├── architecture.mmd
+│   │   ├── use-cases.md
+│   │   ├── member-registration.mmd
+│   │   ├── subscription-lifecycle.mmd
+│   │   ├── attendance-flow.mmd
+│   │   ├── finance-flow.mmd
+│   │   ├── erd.mmd
+│   │   └── deployment.mmd
+│   │
+│   ├── 04-quality/
+│   │   ├── test-strategy.md
+│   │   ├── test-cases.md
+│   │   ├── traceability.csv
+│   │   ├── bug-log.md
+│   │   └── risk-register.md
+│   │
+│   ├── 05-release/
+│   │   ├── build-release.md
+│   │   ├── installation.md
+│   │   ├── backup-recovery.md
+│   │   ├── user-manual.md
+│   │   ├── admin-guide.md
+│   │   └── localization.md
+│   │
+│   └── current-system-documentation.md
+│
+├── src/
+├── pom.xml
+└── mvnw

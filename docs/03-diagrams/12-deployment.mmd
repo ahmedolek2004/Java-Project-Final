@@ -1,0 +1,27 @@
+flowchart TB
+    subgraph ReceptionStation["Physical Desktop Workstation (Front Desk PC)"]
+        subgraph OS["Windows 10/11 x64 OS"]
+            subgraph JVM["Java 25 OpenJDK Runtime"]
+                App["Forge Fitness Application\n(gym-system.jar + OpenJFX 21.0.6)"]
+            end
+            subgraph UserHome["User Profile Directory: ~/.gym-system/"]
+                DB[("gym_system.db\n(Embedded SQLite File)")]
+            end
+        end
+
+        USBPort["USB Port Controller"]
+        PrinterPort["USB / Network Print Spooler"]
+    end
+
+    subgraph ExternalHardware["External Hardware Peripherals"]
+        Scanner["USB HID QR/Barcode Scanner\n(Plug & Play Keyboard Emulation)"]
+        Printer["Thermal Receipt / Card Desktop Printer"]
+        BackupUSB["External USB Backup Drive\n(D:\\GymBackups)"]
+    end
+
+    Scanner -->|"Scanned Member Barcode"| USBPort
+    USBPort --> App
+    App <-->|"Direct File IO / JDBC"| DB
+    App --> PrinterPort
+    PrinterPort --> Printer
+    DB -.->|"1-Click Hot Backup Copy"| BackupUSB

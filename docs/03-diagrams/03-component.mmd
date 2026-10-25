@@ -1,0 +1,35 @@
+flowchart TB
+    subgraph UIComponents["Presentation Layer (controller / page)"]
+        AttendancePage["AttendancePage\n(Live Scanner Listener & Feedback Banner)"]
+        MembersPage["MembersPage\n(Directory, Search, QR Print)"]
+        SubscriptionsPage["SubscriptionsPage\n(Plan Renewal, Freeze/Unfreeze)"]
+        FinancePage["FinancePage & PayrollPage\n(Audit KPIs & Salary Matrix)"]
+    end
+
+    subgraph ServiceComponents["Business Logic Layer (service)"]
+        AttendanceService["AttendanceService\n(Enforces daily cap & session decrement)"]
+        MemberService["MemberService\n(Enforces phone uniqueness)"]
+        SubscriptionService["SubscriptionService\n(Calculates discounts & plan lifecycle)"]
+        FinanceService["FinanceService & PayrollService\n(Enforces monthly salary disbursement cap)"]
+    end
+
+    subgraph DAOComponents["Data Access Layer (dao)"]
+        GymRepository["GymRepository\n(CRUD for Members, Subscriptions, Attendance)"]
+        ClubRepository["ClubRepository\n(Coaches, Activities, Schedules, Payroll)"]
+        UserRepository["UserRepository\n(PBKDF2 Password Check & Auth)"]
+        DatabaseConnection["DatabaseConnection\n(Connection Pooling, Foreign Keys & Migration)"]
+    end
+
+    AttendancePage --> AttendanceService
+    MembersPage --> MemberService
+    SubscriptionsPage --> SubscriptionService
+    FinancePage --> FinanceService
+
+    AttendanceService --> GymRepository
+    MemberService --> GymRepository
+    SubscriptionService --> GymRepository
+    FinanceService --> ClubRepository
+
+    GymRepository --> DatabaseConnection
+    ClubRepository --> DatabaseConnection
+    UserRepository --> DatabaseConnection
