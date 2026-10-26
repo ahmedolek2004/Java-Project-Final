@@ -149,7 +149,7 @@ class ServiceTest {
         assertEquals("English", AppearanceHelper.languageButtonText(true));
         assertEquals("العربية", AppearanceHelper.languageButtonText(false));
 
-        AppearanceSettings dark = AppearanceSettings.create(true, "#FF5500");
+        AppearanceSettings dark = AppearanceSettings.create(true, "#FF0000");
         assertEquals("Light mode", AppearanceHelper.themeButtonText(dark, key -> "appearance.lightMode".equals(key) ? "Light mode" : "Dark mode"));
     }
 }
