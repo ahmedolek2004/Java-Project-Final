@@ -49,6 +49,7 @@ class GymRepositoryTest {
         @BeforeAll
         static void initializeDatabase() throws Exception {
                 System.setProperty("user.home", temporaryDirectory.toString());
+                DatabaseConnection.useDirectory(temporaryDirectory.resolve(".gym-system"));
                 Path databaseDirectory = temporaryDirectory.resolve(".gym-system");
                 Files.createDirectories(databaseDirectory);
                 try (var connection = DriverManager.getConnection(

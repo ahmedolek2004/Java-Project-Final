@@ -1,33 +1,13 @@
 package com.gym.system.dao;
 
-import com.gym.system.model.User;
 import com.gym.system.model.Activity;
 import com.gym.system.model.Coach;
-import com.gym.system.model.Member;
-import com.gym.system.model.Subscription;
 
 import java.sql.SQLException;
-import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 
-public interface GymDataAccess extends UserDAO, MemberDAO, SubscriptionDAO {
-
-    GymRepository.CheckInResult checkIn(int memberId) throws SQLException;
-
-    GymRepository.CheckInResult checkInByQrCode(String value) throws SQLException;
-
-    GymRepository.SubscriptionInvoice subscriptionInvoice(int subscriptionId) throws SQLException;
-
-    List<GymRepository.Attendance> attendance() throws SQLException;
-
-    List<GymRepository.Payment> payments() throws SQLException;
-
-    void confirmOfflineSubscriptionPayment(int subscriptionId) throws SQLException;
-
-    void addExpense(String description, double amount, LocalDate date) throws SQLException;
-
-    GymRepository.Dashboard dashboard() throws SQLException;
+public interface GymDataAccess extends UserDAO, MemberDAO, SubscriptionDAO, AttendanceDAO, FinanceDAO, SettingsDAO {
 
     void addActivity(Activity activity) throws SQLException;
 
@@ -60,8 +40,4 @@ public interface GymDataAccess extends UserDAO, MemberDAO, SubscriptionDAO {
     void paySalary(String employeeType, int employeeId, YearMonth month) throws SQLException;
 
     List<GymRepository.ActivityDemand> activityDemand() throws SQLException;
-
-    String language() throws SQLException;
-
-    void setLanguage(String language) throws SQLException;
 }

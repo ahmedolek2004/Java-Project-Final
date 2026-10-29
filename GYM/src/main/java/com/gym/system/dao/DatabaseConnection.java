@@ -9,11 +9,17 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public final class DatabaseConnection {
-    private static final Path DATABASE_PATH = Path.of(
+    private static Path databasePath = Path.of(
             System.getProperty("user.home"), ".gym-system", "gym_system.db");
-    private static final String URL = "jdbc:sqlite:" + DATABASE_PATH;
+    private static String URL = "jdbc:sqlite:" + databasePath;
 
     private DatabaseConnection() {
+    }
+
+    /** Points the connection at an alternative directory; used by tests to isolate their data. */
+    static void useDirectory(Path directory) {
+        databasePath = directory.resolve("gym_system.db");
+        URL = "jdbc:sqlite:" + databasePath;
     }
 
     public static Connection open() throws SQLException {
@@ -26,7 +32,7 @@ public final class DatabaseConnection {
     }
 
     public static void initialize() throws SQLException, IOException {
-        Files.createDirectories(DATABASE_PATH.getParent());
+        Files.createDirectories(databasePath.getParent());
         try (Connection connection = open(); Statement statement = connection.createStatement()) {
             statement.execute("""
                     CREATE TABLE IF NOT EXISTS users (
@@ -121,10 +127,6 @@ public final class DatabaseConnection {
                     )
                     """);
             statement.execute("""
-                    CREATE UNIQUE INDEX IF NOT EXISTS one_checkin_per_member_day
-                    ON attendance(member_id, date(check_in_time))
-                    """);
-            statement.execute("""
                     CREATE TABLE IF NOT EXISTS payments (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         member_id INTEGER REFERENCES members(id) ON DELETE SET NULL,
@@ -153,10 +155,11 @@ public final class DatabaseConnection {
             ensureColumn(connection, "subscriptions", "activity_id", "INTEGER REFERENCES activities(id) ON DELETE SET NULL");
             ensureColumn(connection, "payments", "subscription_id",
                     "INTEGER REFERENCES subscriptions(id) ON DELETE SET NULL");
+            AttendanceDateMigration.apply(connection);
         }
     }
 
-    private static void ensureColumn(Connection connection, String table, String column, String definition)
+    static void ensureColumn(Connection connection, String table, String column, String definition)
             throws SQLException {
         try (Statement statement = connection.createStatement();
              var columns = statement.executeQuery("PRAGMA table_info(" + table + ")")) {
