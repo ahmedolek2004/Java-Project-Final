@@ -127,7 +127,9 @@ final class SubscriptionRepository implements SubscriptionDAO {
     public GymRepository.SubscriptionInvoice subscriptionInvoice(int subscriptionId) throws SQLException {
         try (Connection connection = DatabaseConnection.open();
                 PreparedStatement statement = connection.prepareStatement("""
-                        SELECT s.id, m.id member_id, m.full_name, m.phone, s.plan_name, s.plan_type,
+                        SELECT s.id, COALESCE(p.id, 0) payment_id, m.id member_id, m.full_name, m.phone,
+                               s.plan_name, s.plan_type,
+                               COALESCE(a.name_ar, '') activity_ar, COALESCE(a.name_en, '') activity_en,
                                COALESCE(s.total_sessions, 0) total_sessions,
                                COALESCE(s.remaining_sessions, 0) remaining_sessions,
                                s.start_date, COALESCE(s.end_date, '') end_date, s.price,
@@ -135,6 +137,7 @@ final class SubscriptionRepository implements SubscriptionDAO {
                                COALESCE(p.status, 'NOT_RECORDED') payment_status
                         FROM subscriptions s JOIN members m ON m.id=s.member_id
                         LEFT JOIN payments p ON p.subscription_id=s.id
+                        LEFT JOIN activities a ON a.id=s.activity_id
                         WHERE s.id=?
                         """)) {
             statement.setInt(1, subscriptionId);
@@ -142,13 +145,15 @@ final class SubscriptionRepository implements SubscriptionDAO {
                 if (!result.next()) {
                     throw new SQLException("The selected subscription no longer exists.");
                 }
-                return new GymRepository.SubscriptionInvoice(result.getInt("id"), result.getInt("member_id"),
+                return new GymRepository.SubscriptionInvoice(result.getInt("id"), result.getInt("payment_id"),
+                        result.getInt("member_id"),
                         result.getString("full_name"), result.getString("phone"),
                         result.getString("plan_name"), result.getString("plan_type"),
                         result.getInt("total_sessions"), result.getInt("remaining_sessions"),
                         result.getString("start_date"), result.getString("end_date"),
                         result.getDouble("price"), result.getString("payment_date"),
-                        result.getString("payment_status"));
+                        result.getString("payment_status"), result.getString("activity_ar"),
+                        result.getString("activity_en"));
             }
         }
     }

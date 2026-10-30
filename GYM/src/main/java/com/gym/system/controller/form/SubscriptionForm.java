@@ -20,6 +20,14 @@ public final class SubscriptionForm {
                                               List<GymRepository.ActivityRow> activities,
                                               boolean isDark, boolean isArabic,
                                               Function<String, String> t) {
+        return show(members, activities, null, isDark, isArabic, t);
+    }
+
+    public static Optional<Subscription> show(List<GymRepository.MemberRow> members,
+                                              List<GymRepository.ActivityRow> activities,
+                                              Integer preselectedMemberId,
+                                              boolean isDark, boolean isArabic,
+                                              Function<String, String> t) {
         if (members == null || members.isEmpty()) {
             return Optional.empty();
         }
@@ -27,6 +35,12 @@ public final class SubscriptionForm {
         ComboBox<String> memberBox = new ComboBox<>();
         members.forEach(m -> memberBox.getItems().add(m.id() + " | " + m.fullName() + " (" + m.phone() + ")"));
         memberBox.getSelectionModel().selectFirst();
+        if (preselectedMemberId != null) {
+            String prefix = preselectedMemberId + " | ";
+            memberBox.getItems().stream().filter(item -> item.startsWith(prefix)).findFirst()
+                    .ifPresent(item -> memberBox.getSelectionModel().select(item));
+            memberBox.setDisable(true);
+        }
 
         TextField planNameField = new TextField();
 

@@ -48,9 +48,8 @@ class GymRepositoryTest {
 
         @BeforeAll
         static void initializeDatabase() throws Exception {
-                System.setProperty("user.home", temporaryDirectory.toString());
-                DatabaseConnection.useDirectory(temporaryDirectory.resolve(".gym-system"));
-                Path databaseDirectory = temporaryDirectory.resolve(".gym-system");
+                Path databaseDirectory = temporaryDirectory.resolve("data");
+                DatabaseConnection.useDirectory(databaseDirectory);
                 Files.createDirectories(databaseDirectory);
                 try (var connection = DriverManager.getConnection(
                                 "jdbc:sqlite:" + databaseDirectory.resolve("gym_system.db").toAbsolutePath());
@@ -108,6 +107,14 @@ class GymRepositoryTest {
                 assertEquals("10 / 10", subscription.remaining());
                 assertEquals("PENDING", subscription.paymentStatus());
                 assertEquals(0, repository.dashboard().revenue(), 0.001);
+                GymRepository.MemberRow overview = repository.members().stream()
+                                .filter(row -> row.id() == member.id()).findFirst().orElseThrow();
+                assertEquals("10 session pack", overview.plan());
+                assertEquals("ACTIVE", overview.status());
+                assertEquals(activity.nameEnglish(), overview.activityEnglish());
+                assertEquals("10 / 10", overview.remaining());
+                assertEquals("PENDING", overview.paymentStatus());
+                assertEquals(1, repository.memberSubscriptions(member.id()).size());
 
                 assertEquals("MEM-%04d".formatted(member.id()), QrCodeService.memberCode(member.id()));
                 var qr = QrCodeService.createMatrix(QrCodeService.memberCode(member.id()), 256);
@@ -125,6 +132,8 @@ class GymRepositoryTest {
                 assertEquals(900.0, invoice.amount(), 0.001);
                 assertEquals("PENDING", invoice.paymentStatus());
                 assertTrue(invoice.paymentDate().isBlank());
+                assertTrue(invoice.paymentId() > 0);
+                assertEquals(activity.nameEnglish(), invoice.activityEnglish());
                 GymRepository.CheckInResult checkIn = repository.checkInByQrCode(QrCodeService.memberCode(member.id()));
                 assertEquals("Test Member", checkIn.memberName());
                 assertEquals("10 session pack", checkIn.planName());
@@ -148,6 +157,10 @@ class GymRepositoryTest {
                 List<GymRepository.SubscriptionRow> memberSubscriptions = repository.subscriptions().stream()
                                 .filter(row -> row.member().equals("Test Member")).toList();
                 assertEquals(2, memberSubscriptions.size());
+                assertEquals(2, repository.memberSubscriptions(member.id()).size());
+                assertEquals("Renewal pack", repository.members().stream()
+                                .filter(row -> row.id() == member.id()).findFirst().orElseThrow().plan());
+                assertEquals(1, repository.memberVisits(member.id(), 5).size());
                 assertEquals("EXPIRED", memberSubscriptions.stream()
                                 .filter(row -> row.id() == subscription.id()).findFirst().orElseThrow().status());
                 Member timeBasedMember = new Member(0, "Time Plan Member", "+201000000003", "",
@@ -186,6 +199,8 @@ class GymRepositoryTest {
                                 2, "10:00", "11:00", 20);
                 assertEquals("Updated class", repository.scheduledClasses().stream()
                                 .filter(row -> row.id() == scheduledClass.id()).findFirst().orElseThrow().title());
+                assertTrue(repository.memberClasses(member.id()).stream()
+                                .anyMatch(row -> row.title().equals("Updated class") && row.dayOfWeek() == 2));
                 repository.deleteScheduledClass(scheduledClass.id());
 
                 repository.addActivity(new Activity(0, "نشاط تجريبي", "Test activity", null));

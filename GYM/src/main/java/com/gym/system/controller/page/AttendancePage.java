@@ -48,7 +48,10 @@ public class AttendancePage {
         HBox scanner = new HBox(10, qrInput, scanBtn);
         HBox.setHgrow(qrInput, Priority.ALWAYS);
 
-        VBox scanPanel = new VBox(8, new Label(ctx.t("attendance.scanTitle")), scanner, scanResult);
+        Label scanTitle = new Label(ctx.t("attendance.scanTitle"));
+        scanTitle.getStyleClass().add("scan-title");
+
+        VBox scanPanel = new VBox(8, scanTitle, scanner, scanResult);
         scanPanel.getStyleClass().add("scan-panel");
 
         // History Search & Manual Check-in

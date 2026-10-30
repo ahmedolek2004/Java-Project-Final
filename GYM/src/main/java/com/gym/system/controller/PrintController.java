@@ -2,8 +2,12 @@ package com.gym.system.controller;
 
 import com.gym.system.dao.GymDataAccess;
 import com.gym.system.dao.GymRepository;
+import com.gym.system.controller.helper.DocumentFactory;
+import com.gym.system.util.AppearanceSettings;
+import com.gym.system.util.ImageFiles;
 import com.gym.system.util.PrintService;
 import com.gym.system.util.QrCodeService;
+import com.google.zxing.WriterException;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -40,51 +44,27 @@ public final class PrintController {
         this.showError = showError;
     }
 
-    public void printMemberCard(GymRepository.MemberRow member) {
+    public void showMemberCard(GymRepository.MemberRow member) {
         try {
-            String code = QrCodeService.memberCode(member.id());
-            VBox document = createPrintDocument(text("print.memberCard"),
-                    List.of(text("members.name") + ": " + member.fullName(),
-                            text("members.phone") + ": " + member.phone(),
-                            text("member.qrCode") + ": " + code),
-                    QrCodeService.createImage(code, 300));
-            sendToPrinter(document);
-        } catch (com.google.zxing.WriterException | IllegalStateException exception) {
-            showError.accept(text("print.failed"), exception);
+            Image image = ImageFiles.render(documents().memberCard(member), DocumentFactory.SCALE);
+            DocumentPreview.show(text("card.dialogTitle"), image,
+                    "member-card-" + QrCodeService.memberCode(member.id()), darkMode(), arabic.getAsBoolean(),
+                    translate, showError);
+        } catch (WriterException | RuntimeException exception) {
+            showError.accept(text("doc.renderFailed"), exception);
         }
     }
 
-    public void printInvoice(int subscriptionId) {
-        printSubscriptionInvoice(subscriptionId);
-    }
-
-    public void printSubscriptionInvoice(int subscriptionId) {
+    public void showReceipt(int subscriptionId) {
         try {
             GymRepository.SubscriptionInvoice invoice = repository.subscriptionInvoice(subscriptionId);
-            String code = QrCodeService.memberCode(invoice.memberId());
-            List<String> details = new ArrayList<>(List.of(
-                    text("print.invoiceNumber") + ": INV-" + invoice.subscriptionId(),
-                    text("members.name") + ": " + invoice.member(),
-                    text("members.phone") + ": " + invoice.phone(),
-                    text("subscription.plan") + ": " + invoice.planName(),
-                    text("subscription.type") + ": " + text("subscription." + invoice.planType()),
-                    text("finance.status") + ": " + text("status." + invoice.paymentStatus())));
-            if (!invoice.paymentDate().isBlank()) {
-                details.add(1, text("finance.date") + ": " + invoice.paymentDate());
-            }
-            if ("SESSION_BASED".equals(invoice.planType())) {
-                details.add(text("subscription.sessions") + ": "
-                        + invoice.remainingSessions() + " / " + invoice.totalSessions());
-            } else {
-                details.add(text("subscription.start") + ": " + invoice.startDate());
-                details.add(text("subscription.end") + ": " + invoice.endDate());
-            }
-            details.add(text("finance.amount") + ": " + formatMoney.apply(invoice.amount()));
-            VBox document = createPrintDocument(text("print.invoice"), details,
-                    QrCodeService.createImage(code, 220));
-            sendToPrinter(document);
-        } catch (SQLException | com.google.zxing.WriterException | IllegalStateException exception) {
-            showError.accept(text("print.failed"), exception);
+            Image image = ImageFiles.render(documents().receipt(invoice), DocumentFactory.SCALE);
+            String number = invoice.paymentId() > 0
+                    ? QrCodeService.receiptCode(invoice.paymentId()) : "INV-" + invoice.subscriptionId();
+            DocumentPreview.show(text("receipt.dialogTitle"), image, "receipt-" + number, darkMode(),
+                    arabic.getAsBoolean(), translate, showError);
+        } catch (SQLException | WriterException | RuntimeException exception) {
+            showError.accept(text("doc.renderFailed"), exception);
         }
     }
 
@@ -173,6 +153,14 @@ public final class PrintController {
         } catch (IllegalStateException exception) {
             showError.accept(text("print.failed"), exception);
         }
+    }
+
+    private DocumentFactory documents() {
+        return new DocumentFactory(translate, formatMoney, arabic.getAsBoolean());
+    }
+
+    private static boolean darkMode() {
+        return AppearanceSettings.load().isDarkMode();
     }
 
     private String text(String key) {

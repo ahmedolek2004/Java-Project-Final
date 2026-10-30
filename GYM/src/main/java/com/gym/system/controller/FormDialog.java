@@ -1,5 +1,7 @@
 package com.gym.system.controller;
 
+import com.gym.system.controller.helper.AppearanceHelper;
+import com.gym.system.controller.helper.WindowChrome;
 import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.control.ButtonType;
@@ -9,10 +11,12 @@ import javafx.scene.control.Control;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
+import javafx.stage.Screen;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +33,7 @@ public final class FormDialog {
     public static List<String> show(String title, boolean darkMode, boolean arabic, Field... fields) {
         Dialog<List<String>> dialog = new Dialog<>();
         dialog.setTitle(title);
+        WindowChrome.decorateDialog(dialog, title);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
         GridPane grid = new GridPane();
@@ -47,12 +52,20 @@ public final class FormDialog {
             grid.add(field.input(), 1, index);
         }
 
-        dialog.getDialogPane().setContent(grid);
+        ScrollPane scroll = new ScrollPane(grid);
+        scroll.setFitToWidth(true);
+        scroll.getStyleClass().add("form-scroll");
+        double maxHeight = Screen.getPrimary().getVisualBounds().getHeight() * 0.62;
+        scroll.setPrefViewportHeight(Math.min(grid.prefHeight(-1) + 4, maxHeight));
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+
+        dialog.getDialogPane().setContent(scroll);
         dialog.getDialogPane().getStylesheets().add(
                 FormDialog.class.getResource("/com/gym/system/views/css/style.css").toExternalForm());
         if (darkMode) {
             dialog.getDialogPane().getStyleClass().add("dark-dialog");
         }
+        AppearanceHelper.applyAccent(dialog.getDialogPane(), darkMode);
         dialog.setResultConverter(button -> {
             if (button != ButtonType.OK) {
                 return null;

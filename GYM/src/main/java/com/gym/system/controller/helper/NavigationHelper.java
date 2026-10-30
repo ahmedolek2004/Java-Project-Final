@@ -13,7 +13,6 @@ public final class NavigationHelper {
         return switch (section) {
             case "dashboard" -> "⌂";
             case "members" -> "♙";
-            case "subscriptions" -> "▣";
             case "attendance" -> "✓";
             case "schedule" -> "📅";
             case "coaches" -> "♟";
