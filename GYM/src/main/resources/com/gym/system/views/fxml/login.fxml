@@ -1,30 +1,65 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
-<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<StackPane fx:id="root" xmlns="http://javafx.com/javafx/21"
-           xmlns:fx="http://javafx.com/fxml/1"
-           fx:controller="com.gym.system.controller.LoginController"
-           styleClass="app-shell">
-    <VBox spacing="14" maxWidth="420" styleClass="section-card"
-          style="-fx-padding: 30;">
-        <Label fx:id="titleLabel" styleClass="page-title"/>
-        <Label fx:id="subtitleLabel" styleClass="page-subtitle"/>
-        <Separator/>
-        <VBox spacing="6">
-            <Label fx:id="usernameLabel" styleClass="muted-label"/>
-            <TextField fx:id="usernameField"/>
-        </VBox>
-        <VBox spacing="6">
-            <Label fx:id="passwordLabel" styleClass="muted-label"/>
-            <PasswordField fx:id="passwordField" onAction="#submit"/>
-        </VBox>
-        <Label fx:id="errorLabel" styleClass="validation-message"/>
-        <Button fx:id="loginButton" maxWidth="Infinity" onAction="#submit" styleClass="primary-button"/>
-        <Button fx:id="languageButton" onAction="#changeLanguage"/>
-    </VBox>
+<?import javafx.scene.text.Font?>
+
+<StackPane fx:id="root" stylesheets="@../css/style.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.gym.system.controller.LoginController">
+   <children>
+      <VBox alignment="CENTER" maxWidth="400.0" spacing="15.0" styleClass="card">
+         <padding>
+            <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
+         </padding>
+         <children>
+            <!-- Titles -->
+            <Label fx:id="titleLabel" text="🏋️‍♂️ GYM SYSTEM" textFill="#f8fafc">
+               <font>
+                  <Font name="System Bold" size="24.0" />
+               </font>
+            </Label>
+            <Label fx:id="subtitleLabel" text="Welcome back, please login" textFill="#94a3b8" />
+            
+            <!-- Error Message Label -->
+            <Label fx:id="errorLabel" textFill="#ef4444">
+               <font>
+                  <Font name="System Bold" size="12.0" />
+               </font>
+            </Label>
+
+            <!-- Username Field -->
+            <VBox spacing="5.0" style="-fx-alignment: center-left;">
+               <children>
+                  <Label fx:id="usernameLabel" text="Username" textFill="#94a3b8" />
+                  <TextField fx:id="usernameField" promptText="Enter your username" />
+               </children>
+            </VBox>
+            
+            <!-- Password Field -->
+            <VBox spacing="5.0" style="-fx-alignment: center-left;">
+               <children>
+                  <Label fx:id="passwordLabel" text="Password" textFill="#94a3b8" />
+                  <PasswordField fx:id="passwordField" promptText="Enter your password" />
+               </children>
+            </VBox>
+            
+            <!-- Login Button -->
+            <Button fx:id="loginButton" maxWidth="Infinity" mnemonicParsing="false" onAction="#submit" text="Login to Dashboard">
+               <VBox.margin>
+                  <Insets top="10.0" />
+               </VBox.margin>
+            </Button>
+
+            <!-- Language Toggle Button -->
+            <Button fx:id="languageButton" maxWidth="Infinity" mnemonicParsing="false" onAction="#changeLanguage" styleClass="button-danger" text="Change Language" />
+         </children>
+      </VBox>
+   </children>
+   <padding>
+      <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+   </padding>
 </StackPane>
