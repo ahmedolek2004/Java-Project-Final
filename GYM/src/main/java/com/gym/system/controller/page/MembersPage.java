@@ -7,8 +7,9 @@ import com.gym.system.controller.helper.TableFactory;
 import com.gym.system.dao.GymRepository;
 import com.gym.system.model.Member;
 import com.gym.system.service.MemberService;
-import com.gym.system.util.QrCodeService;
+import com.gym.system.service.SubscriptionService;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -21,19 +22,24 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Optional;
 
 public class MembersPage {
+    private static final List<String> STATUS_FILTERS = List.of("ALL", "ACTIVE", "FROZEN", "EXPIRED", "NONE");
+
     private final MemberService memberService;
+    private final SubscriptionService subscriptionService;
     private final PageContext ctx;
 
-    public MembersPage(MemberService memberService, PageContext ctx) {
+    public MembersPage(MemberService memberService, SubscriptionService subscriptionService, PageContext ctx) {
         this.memberService = memberService;
+        this.subscriptionService = subscriptionService;
         this.ctx = ctx;
     }
 
     public Node render() throws SQLException {
-        VBox content = new VBox(16);
+        VBox content = new VBox(14);
         content.setPadding(new Insets(20, 28, 28, 28));
         content.getStyleClass().add("page-content");
 
@@ -41,118 +47,105 @@ public class MembersPage {
         search.setPromptText(ctx.t("members.search"));
 
         ComboBox<String> statusFilter = new ComboBox<>(FXCollections.observableArrayList(
-                ctx.t("common.none"),
+                ctx.t("common.all"),
                 ctx.t("status.ACTIVE"),
-                ctx.t("status.EXPIRED")
+                ctx.t("status.FROZEN"),
+                ctx.t("status.EXPIRED"),
+                ctx.t("status.NONE")
         ));
         statusFilter.getSelectionModel().selectFirst();
 
         Button addBtn = new Button(ctx.t("members.add"));
         addBtn.getStyleClass().add("primary-button");
-
-        Button editBtn = new Button(ctx.t("button.edit"));
-        Button printCardBtn = new Button(ctx.t("print.memberCard"));
         Button exportBtn = new Button("📥 " + (ctx.isArabic() ? "تصدير إلى CSV" : "Export CSV"));
 
-        HBox toolbar = new HBox(10, search, statusFilter, addBtn);
+        HBox toolbar = new HBox(10, search, statusFilter, addBtn, exportBtn);
         HBox.setHgrow(search, Priority.ALWAYS);
 
-        HBox actionsBar = new HBox(10, editBtn, printCardBtn, exportBtn);
-
         TableView<GymRepository.MemberRow> table = TableFactory.createTable(ctx.t("table.empty"));
-        javafx.collections.ObservableList<GymRepository.MemberRow> masterList = FXCollections.observableArrayList(memberService.getAllMembers());
-        FilteredList<GymRepository.MemberRow> filtered = new FilteredList<>(masterList, m -> true);
+        ObservableList<GymRepository.MemberRow> masterList =
+                FXCollections.observableArrayList(memberService.getAllMembers());
+        FilteredList<GymRepository.MemberRow> filtered = new FilteredList<>(masterList, member -> true);
+        table.setItems(filtered);
+        table.setMinHeight(180);
 
-        Runnable refreshTable = () -> {
-            try {
-                masterList.setAll(memberService.getAllMembers());
-            } catch (SQLException e) {
-                ctx.showError().accept(ctx.t("error.load") + "\n" + e.getMessage());
-            }
-        };
+        MemberDetailPanel detail = new MemberDetailPanel(memberService, subscriptionService, ctx,
+                memberId -> refresh(masterList, table, memberId));
 
-        // Live Search & Status Filter
+        TableFactory.addColumn(table, ctx.t("members.name"), GymRepository.MemberRow::fullName, 1.4);
+        TableFactory.addColumn(table, ctx.t("members.phone"), GymRepository.MemberRow::phone, 1.4);
+        TableFactory.addColumn(table, ctx.t("members.class"),
+                row -> ctx.isArabic() ? row.activityArabic() : row.activityEnglish(), 1);
+        TableFactory.addColumn(table, ctx.t("subscription.plan"), GymRepository.MemberRow::plan, 1.1);
+        TableFactory.addColumn(table, ctx.t("members.status"), row -> ctx.t("status." + row.status()), 1.3);
+
+        table.getColumns().forEach(column -> column.setMinWidth(70));
+
         Runnable updateFilter = () -> {
             String query = search.getText() == null ? "" : search.getText().trim().toLowerCase();
-            String status = statusFilter.getValue();
+            int index = Math.max(0, statusFilter.getSelectionModel().getSelectedIndex());
+            String status = STATUS_FILTERS.get(index);
             filtered.setPredicate(member -> {
+                String activity = (member.activityEnglish() + " " + member.activityArabic()).toLowerCase();
                 boolean matchesQuery = query.isEmpty()
                         || member.fullName().toLowerCase().contains(query)
                         || member.phone().toLowerCase().contains(query)
                         || member.email().toLowerCase().contains(query)
-                        || member.plan().toLowerCase().contains(query);
-
-                boolean matchesStatus = status == null || status.equals(ctx.t("common.none"))
-                        || ctx.t("status." + member.status()).equalsIgnoreCase(status);
-
+                        || member.plan().toLowerCase().contains(query)
+                        || activity.contains(query);
+                boolean matchesStatus = "ALL".equals(status) || status.equals(member.status());
                 return matchesQuery && matchesStatus;
             });
         };
+        search.textProperty().addListener((obs, oldValue, newValue) -> updateFilter.run());
+        statusFilter.valueProperty().addListener((obs, oldValue, newValue) -> updateFilter.run());
 
-        search.textProperty().addListener((obs, oldVal, newVal) -> updateFilter.run());
-        statusFilter.valueProperty().addListener((obs, oldVal, newVal) -> updateFilter.run());
+        table.getSelectionModel().selectedItemProperty()
+                .addListener((obs, oldValue, newValue) -> detail.show(newValue));
 
-        table.setItems(filtered);
-
-        TableFactory.addColumn(table, ctx.t("members.name"), GymRepository.MemberRow::fullName, 1.4);
-        TableFactory.addColumn(table, ctx.t("members.phone"), GymRepository.MemberRow::phone, 1);
-        TableFactory.addColumn(table, ctx.t("members.email"), GymRepository.MemberRow::email, 1.3);
-        TableFactory.addColumn(table, ctx.t("member.qrCode"), row -> QrCodeService.memberCode(row.id()), .9);
-        TableFactory.addColumn(table, ctx.t("members.plan"), GymRepository.MemberRow::plan, 1);
-        TableFactory.addColumn(table, ctx.t("members.status"), row -> ctx.t("status." + row.status()), .8);
-        TableFactory.addColumn(table, ctx.t("members.notes"), GymRepository.MemberRow::medicalNotes, 1.2);
-
-        // Actions Wiring
-        addBtn.setOnAction(e -> {
+        addBtn.setOnAction(event -> {
             Optional<Member> member = MemberForm.showAdd(ctx.isDarkMode(), ctx.isArabic(), ctx.tFunction());
-            member.ifPresent(m -> {
+            member.ifPresent(value -> {
                 try {
-                    memberService.addMember(m);
-                    refreshTable.run();
-                } catch (Exception ex) {
-                    ctx.showError().accept(ctx.t("error.save") + "\n" + ex.getMessage());
+                    memberService.addMember(value);
+                    search.clear();
+                    statusFilter.getSelectionModel().selectFirst();
+                    masterList.setAll(memberService.getAllMembers());
+                    table.getSelectionModel().selectFirst();
+                } catch (Exception exception) {
+                    ctx.showError().accept(ctx.t("error.save") + "\n" + exception.getMessage());
                 }
             });
         });
 
-        editBtn.setOnAction(e -> {
-            GymRepository.MemberRow selected = table.getSelectionModel().getSelectedItem();
-            if (selected == null) {
-                ctx.showInfo().accept(ctx.t("members.select"));
-                return;
-            }
-            Optional<Member> updated = MemberForm.showEdit(selected, ctx.isDarkMode(), ctx.isArabic(), ctx.tFunction());
-            updated.ifPresent(m -> {
-                try {
-                    memberService.updateMember(selected.id(), m);
-                    refreshTable.run();
-                } catch (Exception ex) {
-                    ctx.showError().accept(ctx.t("error.save") + "\n" + ex.getMessage());
-                }
-            });
-        });
+        exportBtn.setOnAction(event -> DataExportHelper.exportMembers(
+                exportBtn.getScene().getWindow(),
+                filtered,
+                ctx.tFunction(),
+                path -> ctx.showInfo().accept((ctx.isArabic() ? "تم التصدير بنجاح:\n" : "Exported successfully:\n") + path),
+                error -> ctx.showError().accept(error)
+        ));
 
-        printCardBtn.setOnAction(e -> {
-            GymRepository.MemberRow selected = table.getSelectionModel().getSelectedItem();
-            if (selected == null) {
-                ctx.showInfo().accept(ctx.t("members.select"));
-                return;
-            }
-            ctx.printController().printMemberCard(selected);
-        });
-
-        exportBtn.setOnAction(e -> {
-            DataExportHelper.exportMembers(
-                    exportBtn.getScene().getWindow(),
-                    filtered,
-                    ctx.tFunction(),
-                    path -> ctx.showInfo().accept((ctx.isArabic() ? "تم التصدير بنجاح:\n" : "Exported successfully:\n") + path),
-                    err -> ctx.showError().accept(err)
-            );
-        });
-
-        content.getChildren().addAll(toolbar, actionsBar, table);
-        VBox.setVgrow(table, Priority.ALWAYS);
+        HBox body = new HBox(14, table, detail.node());
+        HBox.setHgrow(table, Priority.ALWAYS);
+        content.getChildren().addAll(toolbar, body);
+        VBox.setVgrow(body, Priority.ALWAYS);
         return content;
+    }
+
+    private void refresh(ObservableList<GymRepository.MemberRow> masterList,
+                         TableView<GymRepository.MemberRow> table, int memberId) {
+        try {
+            masterList.setAll(memberService.getAllMembers());
+            for (GymRepository.MemberRow row : table.getItems()) {
+                if (row.id() == memberId) {
+                    table.getSelectionModel().select(row);
+                    table.scrollTo(row);
+                    break;
+                }
+            }
+        } catch (SQLException exception) {
+            ctx.showError().accept(ctx.t("error.load") + "\n" + exception.getMessage());
+        }
     }
 }

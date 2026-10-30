@@ -1,6 +1,9 @@
 package com.gym.system.util;
 
+import javafx.print.PageLayout;
 import javafx.print.PrinterJob;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Region;
@@ -36,6 +39,34 @@ public final class PrintService {
                 job.cancelJob();
                 throw new IllegalStateException("The printer could not print the document.");
             }
+        }
+        if (!job.endJob()) {
+            throw new IllegalStateException("The printer did not complete the print job.");
+        }
+        return true;
+    }
+
+    public static boolean printImage(Window owner, Image image, double renderScale) {
+        PrinterJob job = PrinterJob.createPrinterJob();
+        if (job == null) {
+            throw new IllegalStateException("No system printer is available.");
+        }
+        if (!job.showPrintDialog(owner)) {
+            job.cancelJob();
+            return false;
+        }
+        PageLayout layout = job.getJobSettings().getPageLayout();
+        double naturalWidth = image.getWidth() / renderScale;
+        double naturalHeight = image.getHeight() / renderScale;
+        double factor = Math.min(1.0, Math.min(layout.getPrintableWidth() / naturalWidth,
+                layout.getPrintableHeight() / naturalHeight));
+        ImageView view = new ImageView(image);
+        view.setPreserveRatio(true);
+        view.setSmooth(true);
+        view.setFitWidth(naturalWidth * factor);
+        if (!job.printPage(layout, view)) {
+            job.cancelJob();
+            throw new IllegalStateException("The printer could not print the document.");
         }
         if (!job.endJob()) {
             throw new IllegalStateException("The printer did not complete the print job.");

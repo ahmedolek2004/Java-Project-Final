@@ -18,6 +18,8 @@ import java.util.function.Consumer;
 public final class DashboardController {
     public record NavigationItem(String section, String label, String icon) {}
 
+    private static final double WIDE_LAYOUT_WIDTH = 1100;
+
     @FXML private BorderPane root;
     @FXML private VBox navigation;
     @FXML private BorderPane pageHost;
@@ -56,6 +58,11 @@ public final class DashboardController {
         if (darkMode) {
             root.getStyleClass().add("dark-theme");
         }
+        root.widthProperty().addListener((observable, oldWidth, width) -> {
+            boolean wide = width.doubleValue() >= WIDE_LAYOUT_WIDTH;
+            accentLabel.setVisible(wide);
+            accentLabel.setManaged(wide);
+        });
         accentPicker.setAccessibleText(accent);
         accentPicker.setValue(Color.web(accentColor));
         languageButton.setOnAction(event -> onLanguage.run());

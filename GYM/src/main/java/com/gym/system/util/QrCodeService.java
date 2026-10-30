@@ -23,6 +23,13 @@ public final class QrCodeService {
         return String.format(Locale.ROOT, "MEM-%04d", memberId);
     }
 
+    public static String receiptCode(int paymentId) {
+        if (paymentId < 1) {
+            throw new IllegalArgumentException("Payment ID must be positive.");
+        }
+        return String.format(Locale.ROOT, "RCT-%06d", paymentId);
+    }
+
     public static WritableImage createImage(String value, int size) throws WriterException {
         BitMatrix matrix = createMatrix(value, size);
         WritableImage image = new WritableImage(matrix.getWidth(), matrix.getHeight());

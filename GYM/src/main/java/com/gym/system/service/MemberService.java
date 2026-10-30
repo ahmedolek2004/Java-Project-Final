@@ -24,4 +24,16 @@ public class MemberService {
     public void updateMember(int id, Member member) throws SQLException {
         repository.updateMember(id, member);
     }
+
+    public List<GymRepository.MemberSubscription> getSubscriptions(int memberId) throws SQLException {
+        return repository.memberSubscriptions(memberId);
+    }
+
+    public List<GymRepository.MemberClass> getClasses(int memberId) throws SQLException {
+        return repository.memberClasses(memberId);
+    }
+
+    public List<GymRepository.MemberVisit> getRecentVisits(int memberId, int limit) throws SQLException {
+        return repository.memberVisits(memberId, limit);
+    }
 }

@@ -1,5 +1,6 @@
 package com.gym.system.controller.helper;
 
+import com.gym.system.util.AppPaths;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
@@ -11,13 +12,10 @@ import java.time.LocalDate;
 import java.util.function.Consumer;
 
 public final class DatabaseBackupHelper {
-    private static final Path DATABASE_PATH = Path.of(
-            System.getProperty("user.home"), ".gym-system", "gym_system.db");
-
     private DatabaseBackupHelper() {}
 
     public static void backup(Window window, Consumer<String> onSuccess, Consumer<String> onError) {
-        if (!Files.exists(DATABASE_PATH)) {
+        if (!Files.exists(AppPaths.databasePath())) {
             onError.accept("Database file does not exist yet.");
             return;
         }
@@ -30,7 +28,7 @@ public final class DatabaseBackupHelper {
 
         if (dest != null) {
             try {
-                Files.copy(DATABASE_PATH, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(AppPaths.databasePath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 onSuccess.accept(dest.getAbsolutePath());
             } catch (Exception e) {
                 onError.accept(e.getMessage());
@@ -46,8 +44,8 @@ public final class DatabaseBackupHelper {
 
         if (source != null) {
             try {
-                Files.createDirectories(DATABASE_PATH.getParent());
-                Files.copy(source.toPath(), DATABASE_PATH, StandardCopyOption.REPLACE_EXISTING);
+                Files.createDirectories(AppPaths.databasePath().getParent());
+                Files.copy(source.toPath(), AppPaths.databasePath(), StandardCopyOption.REPLACE_EXISTING);
                 onSuccess.accept(source.getAbsolutePath());
             } catch (Exception e) {
                 onError.accept(e.getMessage());

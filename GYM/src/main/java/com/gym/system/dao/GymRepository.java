@@ -159,6 +159,21 @@ public final class GymRepository implements GymDataAccess {
     }
 
     @Override
+    public List<MemberSubscription> memberSubscriptions(int memberId) throws SQLException {
+        return memberRepository.memberSubscriptions(memberId);
+    }
+
+    @Override
+    public List<MemberClass> memberClasses(int memberId) throws SQLException {
+        return memberRepository.memberClasses(memberId);
+    }
+
+    @Override
+    public List<MemberVisit> memberVisits(int memberId, int limit) throws SQLException {
+        return memberRepository.memberVisits(memberId, limit);
+    }
+
+    @Override
     public void addSubscription(Subscription subscription) throws SQLException {
         subscriptionRepository.addSubscription(subscription);
     }
@@ -244,7 +259,23 @@ public final class GymRepository implements GymDataAccess {
 
     /** Read-only row for the members table. */
     public record MemberRow(int id, String fullName, String phone, String email, String gender,
-            String medicalNotes, String plan, String status) {}
+            String medicalNotes, String plan, String status, int subscriptionId, String planType,
+            String activityArabic, String activityEnglish, String startDate, String endDate,
+            String remaining, double price, String paymentStatus) {
+        public MemberRow(int id, String fullName, String phone, String email, String gender,
+                String medicalNotes, String plan, String status) {
+            this(id, fullName, phone, email, gender, medicalNotes, plan, status, 0, "", "", "", "", "", "-", 0,
+                    "NOT_RECORDED");
+        }
+    }
+
+    public record MemberSubscription(int id, String plan, String type, String activityArabic,
+            String activityEnglish, String startDate, String endDate, String remaining, double price,
+            String status, String paymentStatus) {}
+
+    public record MemberClass(String title, int dayOfWeek, String startTime, String endTime, String coach) {}
+
+    public record MemberVisit(String checkedInAt, String plan) {}
 
     /** Read-only row for the subscriptions table. */
     public record SubscriptionRow(int id, String member, String plan, String type,
@@ -252,10 +283,10 @@ public final class GymRepository implements GymDataAccess {
             String status, String paymentStatus) {}
 
     /** Printable invoice data for one subscription. */
-    public record SubscriptionInvoice(int subscriptionId, int memberId, String member, String phone,
+    public record SubscriptionInvoice(int subscriptionId, int paymentId, int memberId, String member, String phone,
             String planName, String planType, int totalSessions, int remainingSessions,
             String startDate, String endDate, double amount, String paymentDate,
-            String paymentStatus) {}
+            String paymentStatus, String activityArabic, String activityEnglish) {}
 
     /** Check-in receipt for one visit. */
     public record CheckInResult(int memberId, String memberName, String planName, String planType,

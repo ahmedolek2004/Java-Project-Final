@@ -1,5 +1,7 @@
 package com.gym.system.util;
 
+import com.gym.system.controller.helper.AppearanceHelper;
+import com.gym.system.controller.helper.WindowChrome;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -15,10 +17,12 @@ public final class AlertUtils {
     public static void show(Alert alert, String title, String header, boolean arabic, boolean darkMode) {
         alert.setTitle(title);
         alert.setHeaderText(header);
+        WindowChrome.decorateDialog(alert, title);
         alert.getDialogPane().getStylesheets().add(STYLESHEET.toExternalForm());
         if (darkMode) {
             alert.getDialogPane().getStyleClass().add("dark-dialog");
         }
+        AppearanceHelper.applyAccent(alert.getDialogPane(), darkMode);
         alert.getDialogPane().setNodeOrientation(arabic
                 ? NodeOrientation.RIGHT_TO_LEFT : NodeOrientation.LEFT_TO_RIGHT);
         alert.showAndWait();

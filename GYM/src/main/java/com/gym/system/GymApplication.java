@@ -6,6 +6,7 @@ import com.gym.system.controller.PrintController;
 import com.gym.system.controller.helper.AppearanceHelper;
 import com.gym.system.controller.helper.NavigationHelper;
 import com.gym.system.controller.helper.PageContext;
+import com.gym.system.controller.helper.WindowChrome;
 import com.gym.system.controller.page.*;
 import com.gym.system.dao.DatabaseConnection;
 import com.gym.system.dao.GymDataAccess;
@@ -27,6 +28,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -39,8 +41,8 @@ import java.util.Optional;
 
 public class GymApplication extends Application {
     private static final String[] SECTIONS = {
-            "dashboard", "members", "subscriptions", "attendance", "schedule",
-            "coaches", "activities", "finance", "payroll", "team"
+            "dashboard", "members", "attendance", "schedule",
+            "coaches", "activities", "finance", "team"
     };
 
     private GymDataAccess repository;
@@ -53,6 +55,7 @@ public class GymApplication extends Application {
     private LoginController loginController;
     private PrintController printController;
     private String activeSection = "dashboard";
+    private String shownScreen = "";
 
     // Domain Services
     private MemberService memberService;
@@ -91,8 +94,7 @@ public class GymApplication extends Application {
                     this::isArabic, (msg, ex) -> showError(msg, ex));
 
             stage.setTitle(t("app.title"));
-            stage.setMinWidth(900);
-            stage.setMinHeight(620);
+            stage.initStyle(StageStyle.UNDECORATED);
             showLogin();
             stage.show();
         } catch (SQLException | IOException | GeneralSecurityException exception) {
@@ -110,10 +112,10 @@ public class GymApplication extends Application {
                 isArabic() ? NodeOrientation.RIGHT_TO_LEFT : NodeOrientation.LEFT_TO_RIGHT,
                 this::authenticate, this::toggleLanguage
         );
-        Scene scene = new Scene(root, 1000, 700);
-        scene.getStylesheets().add(GymApplication.class.getResource("views/css/style.css").toExternalForm());
+        Scene scene = createScene(WindowChrome.wrap(stage, root, t("app.title")), "login", 1000, 700);
         AppearanceHelper.applyAppearance(scene.getRoot(), appearance);
         stage.setScene(scene);
+        fitWindow("login", 1000, 700);
     }
 
     private void authenticate(String username, char[] password) {
@@ -159,12 +161,28 @@ public class GymApplication extends Application {
                 navigationItems(), this::showSection, this::toggleLanguage, this::setDarkMode,
                 this::setAccentColor, this::logout
         );
-        Scene scene = new Scene(root, 1280, 820);
-        scene.getStylesheets().add(GymApplication.class.getResource("views/css/style.css").toExternalForm());
+        Scene scene = createScene(WindowChrome.wrap(stage, root, t("app.title")), "dashboard", 1280, 820);
         AppearanceHelper.applyAppearance(scene.getRoot(), appearance);
         stage.setScene(scene);
         stage.setTitle(t("app.title"));
+        fitWindow("dashboard", 1280, 820);
         showSection(activeSection);
+    }
+
+    private Scene createScene(Parent shell, String screen, double width, double height) {
+        double[] size = screen.equals(shownScreen)
+                ? new double[]{stage.getWidth(), stage.getHeight()}
+                : WindowChrome.fittedSize(stage, width, height);
+        Scene scene = new Scene(shell, size[0], size[1]);
+        scene.getStylesheets().add(GymApplication.class.getResource("views/css/style.css").toExternalForm());
+        return scene;
+    }
+
+    private void fitWindow(String screen, double width, double height) {
+        if (!screen.equals(shownScreen)) {
+            WindowChrome.fit(stage, width, height);
+            shownScreen = screen;
+        }
     }
 
     private List<DashboardController.NavigationItem> navigationItems() {
@@ -200,8 +218,7 @@ public class GymApplication extends Application {
         Node page;
         try {
             page = switch (section) {
-                case "members" -> new MembersPage(memberService, ctx).render();
-                case "subscriptions" -> new SubscriptionsPage(subscriptionService, ctx).render();
+                case "members" -> new MembersPage(memberService, subscriptionService, ctx).render();
                 case "attendance" -> new AttendancePage(attendanceService, ctx).render();
                 case "schedule" -> new SchedulePage(scheduleService, ctx).render();
                 case "coaches" -> new CoachesPage(coachService, ctx).render();
@@ -216,7 +233,7 @@ public class GymApplication extends Application {
             page = new Label(t("error.load"));
         }
         dashboardController.showPage(t("nav." + section), t("subtitle." + section), page,
-                section, navigationItems());
+                "payroll".equals(section) ? "finance" : section, navigationItems());
     }
 
     private void toggleLanguage() {

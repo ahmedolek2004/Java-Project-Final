@@ -14,44 +14,44 @@
             fx:controller="com.gym.system.controller.DashboardController"
             styleClass="app-shell">
     <left>
-        <VBox spacing="20" prefWidth="236" styleClass="sidebar"
-              style="-fx-padding: 24 14 18 14;">
+        <VBox spacing="20" prefWidth="236" styleClass="sidebar">
             <HBox spacing="11" alignment="CENTER_LEFT">
                 <Label text="F" styleClass="brand-mark"/>
                 <VBox spacing="1" styleClass="brand-copy">
-                    <Label text="FORGE"/>
-                    <Label fx:id="clubLabel"/>
+                    <Label text="FORGE" styleClass="brand-title"/>
+                    <Label fx:id="clubLabel" styleClass="brand-subtitle"/>
                 </VBox>
             </HBox>
             <Separator/>
             <Label fx:id="workspaceLabel" styleClass="nav-caption"/>
-            <VBox fx:id="navigation" spacing="5"/>
-            <Region VBox.vgrow="ALWAYS"/>
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="nav-scroll" VBox.vgrow="ALWAYS">
+                <content>
+                    <VBox fx:id="navigation" spacing="5"/>
+                </content>
+            </ScrollPane>
             <HBox spacing="10" alignment="CENTER_LEFT">
                 <Label fx:id="initialsLabel" styleClass="profile-mark"/>
                 <VBox spacing="3" styleClass="profile-copy">
-                    <Label fx:id="userNameLabel"/>
-                    <Label fx:id="userRoleLabel"/>
+                    <Label fx:id="userNameLabel" styleClass="profile-name"/>
+                    <Label fx:id="userRoleLabel" styleClass="profile-role"/>
                 </VBox>
             </HBox>
         </VBox>
     </left>
     <center>
         <VBox>
-            <HBox spacing="18" alignment="CENTER_LEFT" styleClass="topbar"
-                  style="-fx-padding: 18 28 18 28;">
-                <VBox spacing="3">
+            <HBox spacing="18" alignment="CENTER_LEFT" styleClass="topbar">
+                <VBox spacing="3" minWidth="0" HBox.hgrow="ALWAYS">
                     <Label fx:id="pageTitle" styleClass="page-title"/>
                     <Label fx:id="pageSubtitle" styleClass="page-subtitle"/>
                 </VBox>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Label fx:id="accentLabel" styleClass="muted-label"/>
-                <ColorPicker fx:id="accentPicker" styleClass="accent-picker"/>
-                <Button fx:id="themeButton"/>
-                <Button fx:id="languageButton"/>
-                <Button fx:id="logoutButton"/>
+                <Label fx:id="accentLabel" styleClass="muted-label" minWidth="-Infinity"/>
+                <ColorPicker fx:id="accentPicker" styleClass="accent-picker" minWidth="-Infinity"/>
+                <Button fx:id="themeButton" minWidth="-Infinity"/>
+                <Button fx:id="languageButton" minWidth="-Infinity"/>
+                <Button fx:id="logoutButton" minWidth="-Infinity"/>
             </HBox>
-            <ScrollPane fitToWidth="true" styleClass="content-scroll" VBox.vgrow="ALWAYS">
+            <ScrollPane fitToWidth="true" fitToHeight="true" styleClass="content-scroll" VBox.vgrow="ALWAYS">
                 <content>
                     <BorderPane fx:id="pageHost"/>
                 </content>

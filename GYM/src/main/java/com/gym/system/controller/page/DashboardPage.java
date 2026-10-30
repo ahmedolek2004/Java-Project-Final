@@ -38,6 +38,9 @@ public class DashboardPage {
         Label appTitle = new Label(ctx.t("app.title"));
         Label welcomeMsg = new Label(ctx.t("dashboard.welcome", ctx.currentUser() != null ? ctx.currentUser().fullName() : ""));
         Label helpText = new Label(ctx.t("dashboard.help"));
+        appTitle.getStyleClass().add("welcome-eyebrow");
+        welcomeMsg.getStyleClass().add("welcome-title");
+        helpText.getStyleClass().add("welcome-text");
 
         Button addMemberBtn = new Button(ctx.t("members.add"));
         addMemberBtn.getStyleClass().add("primary-button");
@@ -69,7 +72,7 @@ public class DashboardPage {
 
         HBox welcomeActions = new HBox(10, addMemberBtn, printReportBtn, backupBtn);
         VBox welcomeCard = new VBox(8, appTitle, welcomeMsg, helpText, welcomeActions);
-        welcomeCard.getStyleClass().addAll("welcome-card", "welcome-copy");
+        welcomeCard.getStyleClass().add("welcome-card");
 
         // 2. Metrics FlowPane
         FlowPane metrics = new FlowPane(12, 12);

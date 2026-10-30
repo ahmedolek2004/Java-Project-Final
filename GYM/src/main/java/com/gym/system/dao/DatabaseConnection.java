@@ -1,29 +1,26 @@
 package com.gym.system.dao;
 
+import com.gym.system.util.AppPaths;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
 public final class DatabaseConnection {
-    private static Path databasePath = Path.of(
-            System.getProperty("user.home"), ".gym-system", "gym_system.db");
-    private static String URL = "jdbc:sqlite:" + databasePath;
-
     private DatabaseConnection() {
     }
 
-    /** Points the connection at an alternative directory; used by tests to isolate their data. */
     static void useDirectory(Path directory) {
-        databasePath = directory.resolve("gym_system.db");
-        URL = "jdbc:sqlite:" + databasePath;
+        AppPaths.useDirectory(directory);
     }
 
     public static Connection open() throws SQLException {
-        Connection connection = DriverManager.getConnection(URL);
+        Connection connection = DriverManager.getConnection("jdbc:sqlite:" + AppPaths.databasePath());
         try (Statement statement = connection.createStatement()) {
             statement.execute("PRAGMA foreign_keys = ON");
             statement.execute("PRAGMA busy_timeout = 5000");
@@ -32,7 +29,9 @@ public final class DatabaseConnection {
     }
 
     public static void initialize() throws SQLException, IOException {
-        Files.createDirectories(databasePath.getParent());
+        Path database = AppPaths.databasePath();
+        Files.createDirectories(database.getParent());
+        migrateLegacyDatabase(database);
         try (Connection connection = open(); Statement statement = connection.createStatement()) {
             statement.execute("""
                     CREATE TABLE IF NOT EXISTS users (
@@ -156,6 +155,14 @@ public final class DatabaseConnection {
             ensureColumn(connection, "payments", "subscription_id",
                     "INTEGER REFERENCES subscriptions(id) ON DELETE SET NULL");
             AttendanceDateMigration.apply(connection);
+        }
+    }
+
+    private static void migrateLegacyDatabase(Path database) throws IOException {
+        Path legacy = AppPaths.legacyDatabasePath();
+        if (!Files.exists(database) && Files.isRegularFile(legacy)
+                && !legacy.toAbsolutePath().equals(database.toAbsolutePath())) {
+            Files.copy(legacy, database, StandardCopyOption.COPY_ATTRIBUTES);
         }
     }
 
