@@ -27,10 +27,65 @@ Passwords are stored as salted PBKDF2 hashes. The database is created at
 ## Source layout
 
 - `com.gym.system.model`: encapsulated member, coach, subscription, and staff entities.
-- `com.gym.system.dao`: SQLite connection, DAO contract, and JDBC repository.
-- `com.gym.system.controller`: JavaFX FXML controllers.
+- `com.gym.system.dto`: read-only result records returned to the screens (`MemberRow`, `Payment`, `Dashboard`, ...).
+- `com.gym.system.dao`: SQLite connection, one small `XxxDAO` contract per area, its `XxxRepository` JDBC
+  implementation, and `GymRepository`, a facade that only delegates. Shared SQL rules live in
+  `SubscriptionRules` (is a subscription usable today?) and `SqlClock` (what "today" means).
+- `com.gym.system.service`: use cases. Every service checks the signed-in user through `AccessControl`.
+- `com.gym.system.controller`: JavaFX FXML controllers, pages, forms and helpers.
 - `com.gym.system.util`: localization, user session, and alert utilities.
 - `com.gym.system.views.fxml` and `com.gym.system.views.css`: FXML screens and shared CSS.
+
+Naming convention in `dao`: `XxxDAO` is the contract (interface), `XxxRepository` is its JDBC implementation.
+
+## Access control
+
+Permissions are enforced in the service layer, not only by hiding menu items, so a screen that forgets to hide a
+button still cannot bypass them. A denied call throws `AccessDeniedException` before any data is touched.
+
+| Area | Administrator | Receptionist |
+| --- | --- | --- |
+| Members, subscriptions, check-ins, schedule, coaches, activities | Full access | Full access |
+| Medical notes | Read and edit | Can record notes when registering a member; cannot read them or overwrite them later |
+| Payment history and expenses | Full access | Denied |
+| Payroll | Full access | Denied |
+| Staff accounts | Full access | Denied |
+
+Known limits: the dashboard still shows monthly revenue and expenses to both roles, and a few screens still call the
+repository directly. Both are tracked in the update plan below.
+
+## Updates
+
+### 1.1.0 (2026-10-31) - architecture and reliability update
+
+**Fixed**
+- "Today" was calculated in UTC while subscription dates are local, so in Egypt a subscription starting today
+  stayed unusable until 02:00-03:00 and the daily check-in limit reset at 02:00-03:00 instead of midnight. All
+  queries now use local time through `SqlClock`.
+- The one-check-in-per-day rule now uses a stored local `check_in_date` column. Existing databases migrate
+  automatically on first launch; no attendance rows are deleted.
+- Subscription status can only be toggled between `ACTIVE` and `FROZEN`; expenses reject blank descriptions,
+  non-positive amounts and missing dates.
+
+**Security**
+- Finance, payroll and staff-account operations are administrator-only at the service level.
+- Medical notes are hidden from receptionists in the member list and CSV export, and reception edits can no
+  longer overwrite stored notes.
+
+**Changed (no behavior change)**
+- The "subscription is usable" SQL condition, previously copied five times, lives in `SubscriptionRules`.
+- The 12 result records moved from `GymRepository` to the `dto` package.
+- `GymRepository` (505 lines) and `ClubRepository` were split into focused repositories behind small interfaces;
+  `GymRepository` is now a delegating facade.
+
+**Tests added**
+- `SubscriptionRulesTest` (inclusive end date, start date, session packs), `AttendanceDateMigrationTest`
+  (migration, idempotence, same-day rejection) and `ServiceAuthorizationTest` (roles, notes, validation).
+
+**Next updates**
+1. Route the remaining direct repository calls in pages through services; replace broad `catch (Exception)`.
+2. Shared base class for the CRUD pages.
+3. Role model and encapsulation clean-up, then integration tests and documentation refresh.
 
 ## Included workflows
 

@@ -1,24 +1,37 @@
 package com.gym.system.service;
 
 import com.gym.system.dao.GymDataAccess;
-import com.gym.system.dao.GymRepository;
+import com.gym.system.dao.GymRepository.Attendance;
+import com.gym.system.dao.GymRepository.CheckInResult;
+
 import java.sql.SQLException;
 import java.util.List;
 
 public class AttendanceService {
     private final GymDataAccess repository;
-    public AttendanceService(GymDataAccess repository) { this.repository = repository; }
+    private final AccessControl access;
 
-    public List<GymRepository.Attendance> getAllAttendance() throws SQLException {
+    public AttendanceService(GymDataAccess repository, AccessControl access) {
+        this.repository = repository;
+        this.access = access;
+    }
+
+    public List<Attendance> getAllAttendance() throws SQLException {
+        access.requireSignedIn();
         return repository.attendance();
     }
-    public GymRepository.CheckInResult checkIn(int memberId) throws SQLException {
+
+    public CheckInResult checkIn(int memberId) throws SQLException {
+        access.requireSignedIn();
         return repository.checkIn(memberId);
     }
-    public GymRepository.CheckInResult checkInByQr(String qrCode) throws SQLException {
-        return repository.checkInByQrCode(qrCode);
+
+    public CheckInResult checkInByQr(String qrCode) throws SQLException {
+        return checkInByQrCode(qrCode);
     }
-    public GymRepository.CheckInResult checkInByQrCode(String qrCode) throws SQLException {
+
+    public CheckInResult checkInByQrCode(String qrCode) throws SQLException {
+        access.requireSignedIn();
         return repository.checkInByQrCode(qrCode);
     }
 }

@@ -4,7 +4,7 @@ module com.gym.system {
     requires transitive javafx.fxml;
     requires transitive java.sql;
     requires transitive com.google.zxing;
-    requires java.desktop;
+    requires transitive java.desktop;
     requires java.prefs;
 
     opens com.gym.system to javafx.fxml;

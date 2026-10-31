@@ -26,9 +26,9 @@
 | **2 ✅** | إصلاح مشكلة التوقيت (UTC مقابل المحلي) + migration للـ unique index + تستات حدودية | `SqlClock`, `AttendanceDateMigration`, `DatabaseConnection`, `GymRepository` + تستين |
 | **3 ✅** | نقل 12 record من `GymRepository` لحزمة `com.gym.system.dto` وتحديث كل الاستخدامات (32 ملف) | تغيير ميكانيكي |
 | **4 ✅** | تقسيم `GymRepository` (505 → 237 سطر) إلى Member / Subscription / Attendance / Finance / Settings repositories خلف interfaces، و`GymRepository` بقى facade بدون SQL | dao |
-| 5 | تقسيم `ClubRepository` (Activity / Coach / Schedule / Payroll) وتوحيد التسمية | dao |
-| 6 | Services حقيقية: validation + فرض الصلاحيات + إخفاء الملاحظات الطبية عن الريسبشن | service |
-| 7 | استبدال `catch (Exception)` بمعالجة محددة + معالج أخطاء مركزي | controller/page |
+| **5 ✅** | تقسيم `ClubRepository` إلى Activity / Coach / Schedule / Payroll + `SqlSupport` للدوال المشتركة وتوحيد التسمية (`XxxDAO` عقد، `XxxRepository` تنفيذ) | dao |
+| **6 ✅** | فرض الصلاحيات في الـ Services عبر `AccessControl` + validation + إخفاء الملاحظات الطبية عن الريسبشن + تحديث README وCHANGELOG | service, test, docs |
+| 7 | إزالة استدعاءات الـ repository المباشرة من الصفحات (Dashboard/Finance/Print) + استبدال `catch (Exception)` بمعالجة محددة + معالج أخطاء مركزي يعرض `AccessDeniedException` | controller/page |
 | 8 | استخراج `CrudPage` أساسي (abstract) يقلل التكرار بين الصفحات | controller/page |
 | 9 | OOP للأدوار (`Role` + صلاحيات polymorphic) وتحسين encapsulation للـ models | model |
 | 10 | تستات الخدمات والقواعد على قاعدة بيانات مؤقتة، وتحديث التوثيق | test + docs |

@@ -256,7 +256,7 @@ public final class MemberDetailPanel {
         }
         addRow(grid, row++, ctx.t("members.price"), ctx.money(member.price()));
         addRow(grid, row++, ctx.t("members.paymentStatus"), ctx.t("status." + member.paymentStatus()));
-        if (!member.medicalNotes().isBlank()) {
+        if (member.medicalNotes() != null && !member.medicalNotes().isBlank()) {
             addRow(grid, row, ctx.t("members.notes"), member.medicalNotes());
         }
         return grid;
