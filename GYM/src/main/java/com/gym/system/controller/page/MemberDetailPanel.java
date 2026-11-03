@@ -1,12 +1,10 @@
 package com.gym.system.controller.page;
 
-import com.gym.system.controller.form.MemberForm;
-import com.gym.system.controller.form.SubscriptionForm;
+import com.gym.system.controller.form.MemberWizard;
 import com.gym.system.controller.helper.PageContext;
 import com.gym.system.controller.helper.TableFactory;
 import com.gym.system.dao.GymRepository;
-import com.gym.system.model.Member;
-import com.gym.system.model.Subscription;
+import com.gym.system.service.AttendanceService;
 import com.gym.system.service.MemberService;
 import com.gym.system.service.SubscriptionService;
 import com.gym.system.util.QrCodeService;
@@ -26,21 +24,24 @@ import javafx.scene.layout.VBox;
 
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.IntConsumer;
 
 public final class MemberDetailPanel {
     private final MemberService memberService;
     private final SubscriptionService subscriptionService;
+    private final AttendanceService attendanceService;
     private final PageContext ctx;
     private final IntConsumer onChanged;
+    private String pendingMessage;
+    private boolean pendingError;
     private final VBox box = new VBox(14);
     private final ScrollPane root = new ScrollPane(box);
 
     public MemberDetailPanel(MemberService memberService, SubscriptionService subscriptionService,
-                             PageContext ctx, IntConsumer onChanged) {
+                             AttendanceService attendanceService, PageContext ctx, IntConsumer onChanged) {
         this.memberService = memberService;
         this.subscriptionService = subscriptionService;
+        this.attendanceService = attendanceService;
         this.ctx = ctx;
         this.onChanged = onChanged;
         box.setPadding(new Insets(18));
@@ -48,14 +49,40 @@ public final class MemberDetailPanel {
         root.setFitToWidth(true);
         root.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         root.getStyleClass().addAll("detail-scroll");
-        root.setMinWidth(330);
-        root.setPrefWidth(390);
+        root.setMinWidth(320);
+        root.setPrefWidth(360);
         root.setMaxWidth(440);
         show(null);
     }
 
     public Node node() {
         return root;
+    }
+
+    public void announce(String message, boolean error) {
+        pendingMessage = message;
+        pendingError = error;
+    }
+
+    public static String checkInSummary(PageContext ctx, GymRepository.CheckInResult result) {
+        String message = result.memberName() + " • " + ctx.t("subscription.plan") + ": " + result.planName()
+                + " (" + ctx.t("subscription." + result.planType()) + ")";
+        if (result.sessionBased()) {
+            return message + " • " + ctx.t("attendance.sessionsLeft",
+                    result.remainingSessions() + " / " + result.totalSessions());
+        }
+        return message + " • " + ctx.t("subscription.end") + ": " + result.endDate();
+    }
+
+    public static String checkInProblem(PageContext ctx, Exception exception) {
+        if (exception instanceof IllegalArgumentException) {
+            return ctx.t("attendance.qrInvalid");
+        }
+        if (exception instanceof IllegalStateException state) {
+            return "PAYMENT_PENDING".equals(state.getMessage())
+                    ? ctx.t("attendance.paymentPending") : ctx.t("attendance.invalid");
+        }
+        return ctx.t("error.checkin");
     }
 
     public void show(GymRepository.MemberRow member) {
@@ -69,27 +96,37 @@ public final class MemberDetailPanel {
         }
         try {
             List<GymRepository.MemberSubscription> subscriptions = memberService.getSubscriptions(member.id());
-            List<GymRepository.MemberClass> classes = memberService.getClasses(member.id());
             List<GymRepository.MemberVisit> visits = memberService.getRecentVisits(member.id(), 5);
-            build(member, subscriptions, classes, visits);
+            build(member, subscriptions, visits);
         } catch (SQLException exception) {
             ctx.showError().accept(ctx.t("error.load") + "\n" + exception.getMessage());
         }
     }
 
     private void build(GymRepository.MemberRow member, List<GymRepository.MemberSubscription> subscriptions,
-                       List<GymRepository.MemberClass> classes, List<GymRepository.MemberVisit> visits) {
+                       List<GymRepository.MemberVisit> visits) {
         box.getChildren().add(header(member));
 
+        Button checkInBtn = new Button("✓ " + ctx.t("attendance.scan"));
+        checkInBtn.getStyleClass().add("primary-button");
+        checkInBtn.setDisable(member.subscriptionId() == 0);
         Button editBtn = new Button(ctx.t("members.edit"));
         Button addSubscriptionBtn = new Button(ctx.t("subscription.add"));
-        addSubscriptionBtn.getStyleClass().add("primary-button");
         Button toggleBtn = new Button(ctx.t("subscription.freeze"));
         Button payBtn = new Button(ctx.t("finance.confirmReceived"));
         Button receiptBtn = new Button("🧾 " + ctx.t("receipt.view"));
         Button cardBtn = new Button("▦ " + ctx.t("card.view"));
-        FlowPane actions = new FlowPane(8, 8, addSubscriptionBtn, editBtn, toggleBtn, payBtn, receiptBtn, cardBtn);
+        FlowPane actions = new FlowPane(8, 8, checkInBtn, addSubscriptionBtn, editBtn, toggleBtn, payBtn, receiptBtn,
+                cardBtn);
         box.getChildren().add(actions);
+        if (pendingMessage != null) {
+            Label banner = new Label(pendingMessage);
+            banner.setWrapText(true);
+            banner.setMaxWidth(Double.MAX_VALUE);
+            banner.getStyleClass().addAll("scan-result", pendingError ? "scan-error" : "scan-success");
+            box.getChildren().add(banner);
+            pendingMessage = null;
+        }
 
         box.getChildren().add(heading(ctx.t("members.membership")));
         if (member.subscriptionId() == 0) {
@@ -108,16 +145,6 @@ public final class MemberDetailPanel {
             box.getChildren().add(history);
         }
 
-        box.getChildren().add(heading(ctx.t("members.classes")));
-        if (classes.isEmpty()) {
-            box.getChildren().add(mutedLine(ctx.t("members.noClasses")));
-        } else {
-            for (GymRepository.MemberClass item : classes) {
-                box.getChildren().add(line(ctx.t("day." + item.dayOfWeek()) + "  " + item.startTime() + "–"
-                        + item.endTime() + "  •  " + item.title() + "  •  " + item.coach()));
-            }
-        }
-
         box.getChildren().add(heading(ctx.t("members.visits")));
         if (visits.isEmpty()) {
             box.getChildren().add(mutedLine(ctx.t("members.noVisits")));
@@ -127,13 +154,13 @@ public final class MemberDetailPanel {
             }
         }
 
-        wireActions(member, history, editBtn, addSubscriptionBtn, toggleBtn, payBtn, receiptBtn, cardBtn);
+        wireActions(member, history, checkInBtn, editBtn, addSubscriptionBtn, toggleBtn, payBtn, receiptBtn, cardBtn);
     }
 
     private void wireActions(GymRepository.MemberRow member,
                              TableView<GymRepository.MemberSubscription> history,
-                             Button editBtn, Button addSubscriptionBtn, Button toggleBtn, Button payBtn,
-                             Button receiptBtn, Button cardBtn) {
+                             Button checkInBtn, Button editBtn, Button addSubscriptionBtn, Button toggleBtn,
+                             Button payBtn, Button receiptBtn, Button cardBtn) {
         Runnable updateButtons = () -> {
             GymRepository.MemberSubscription selected = history == null ? null
                     : history.getSelectionModel().getSelectedItem();
@@ -150,27 +177,49 @@ public final class MemberDetailPanel {
         }
         updateButtons.run();
 
+        checkInBtn.setOnAction(event -> {
+            try {
+                announce(checkInSummary(ctx, attendanceService.checkIn(member.id())), false);
+            } catch (IllegalStateException | IllegalArgumentException exception) {
+                announce(checkInProblem(ctx, exception), true);
+            } catch (SQLException exception) {
+                announce(checkInProblem(ctx, exception), true);
+            }
+            onChanged.accept(member.id());
+        });
+
         editBtn.setOnAction(event -> {
-            Optional<Member> updated = MemberForm.showEdit(member, ctx.isDarkMode(), ctx.isArabic(), ctx.tFunction());
-            updated.ifPresent(value -> {
-                try {
-                    memberService.updateMember(member.id(), value);
-                    onChanged.accept(member.id());
-                } catch (Exception exception) {
-                    ctx.showError().accept(ctx.t("error.save") + "\n" + exception.getMessage());
-                }
-            });
+            try {
+                Integer currentClass = member.classId() == 0 ? null : member.classId();
+                MemberWizard.showEdit(member, memberService.getAvailableClasses(currentClass),
+                        ctx.isDarkMode(), ctx.isArabic(), ctx.tFunction(), ctx::money).ifPresent(edit -> {
+                    try {
+                        memberService.updateMember(member.id(), edit.member());
+                        if (edit.classChanged()) {
+                            subscriptionService.changeClass(member.subscriptionId(), edit.classId());
+                        }
+                        onChanged.accept(member.id());
+                    } catch (IllegalStateException exception) {
+                        ctx.showError().accept(ctx.t("wizard.classFull"));
+                    } catch (Exception exception) {
+                        ctx.showError().accept(ctx.t("error.save") + "\n" + exception.getMessage());
+                    }
+                });
+            } catch (SQLException exception) {
+                ctx.showError().accept(ctx.t("error.load") + "\n" + exception.getMessage());
+            }
         });
 
         addSubscriptionBtn.setOnAction(event -> {
             try {
-                Optional<Subscription> subscription = SubscriptionForm.show(
-                        ctx.repository().members(), ctx.repository().activities(), member.id(),
-                        ctx.isDarkMode(), ctx.isArabic(), ctx.tFunction());
-                subscription.ifPresent(value -> {
+                Integer currentClass = member.classId() == 0 ? null : member.classId();
+                MemberWizard.showRenew(member, ctx.repository().plans(), memberService.getAvailableClasses(currentClass),
+                        ctx.isDarkMode(), ctx.isArabic(), ctx.tFunction(), ctx::money).ifPresent(renewal -> {
                     try {
-                        subscriptionService.addSubscription(value);
+                        subscriptionService.addSubscription(renewal.subscription(), renewal.paidNow());
                         onChanged.accept(member.id());
+                    } catch (IllegalStateException exception) {
+                        ctx.showError().accept(ctx.t("wizard.classFull"));
                     } catch (Exception exception) {
                         ctx.showError().accept(ctx.t("error.subscription") + "\n" + exception.getMessage());
                     }
@@ -247,8 +296,7 @@ public final class MemberDetailPanel {
         addRow(grid, row++, ctx.t("members.code"), QrCodeService.memberCode(member.id()));
         addRow(grid, row++, ctx.t("subscription.plan"),
                 member.plan() + " (" + ctx.t("subscription." + member.planType()) + ")");
-        String activity = ctx.isArabic() ? member.activityArabic() : member.activityEnglish();
-        addRow(grid, row++, ctx.t("members.class"), activity == null || activity.isBlank() ? "-" : activity);
+        addRow(grid, row++, ctx.t("members.class"), classLabel(member));
         if ("SESSION_BASED".equals(member.planType())) {
             addRow(grid, row++, ctx.t("members.sessions"), member.remaining());
         } else {
@@ -269,7 +317,8 @@ public final class MemberDetailPanel {
         table.getItems().setAll(subscriptions);
         TableFactory.addColumn(table, ctx.t("subscription.plan"), GymRepository.MemberSubscription::plan, 1.2);
         TableFactory.addColumn(table, ctx.t("members.class"),
-                row -> ctx.isArabic() ? row.activityArabic() : row.activityEnglish(), 1);
+                row -> row.classTitle().isBlank()
+                        ? (ctx.isArabic() ? row.activityArabic() : row.activityEnglish()) : row.classTitle(), 1);
         TableFactory.addColumn(table, ctx.t("members.status"), row -> ctx.t("status." + row.status()), .9);
         TableFactory.addColumn(table, ctx.t("members.paymentStatus"), row -> ctx.t("status." + row.paymentStatus()), .9);
         table.getColumns().forEach(column -> column.setMinWidth(55));
@@ -288,6 +337,15 @@ public final class MemberDetailPanel {
             table.getSelectionModel().selectFirst();
         }
         return table;
+    }
+
+    private String classLabel(GymRepository.MemberRow member) {
+        if (member.classId() == 0) {
+            String activity = ctx.isArabic() ? member.activityArabic() : member.activityEnglish();
+            return activity == null || activity.isBlank() ? "-" : activity;
+        }
+        return member.classTitle() + "  •  " + ctx.t("day." + member.classDay()) + " " + member.classStart() + "–"
+                + member.classEnd();
     }
 
     private Label pill(String status) {

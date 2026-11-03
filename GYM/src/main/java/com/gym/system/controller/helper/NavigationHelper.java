@@ -13,8 +13,7 @@ public final class NavigationHelper {
         return switch (section) {
             case "dashboard" -> "⌂";
             case "members" -> "♙";
-            case "subscriptions" -> "★";
-            case "attendance" -> "✓";
+            case "plans" -> "◈";
             case "schedule" -> "📅";
             case "coaches" -> "♟";
             case "activities" -> "▦";
@@ -30,7 +29,8 @@ public final class NavigationHelper {
         List<DashboardController.NavigationItem> items = new ArrayList<>();
         boolean isAdmin = "ADMIN".equalsIgnoreCase(role);
         for (String section : sections) {
-            if (("team".equals(section) || "finance".equals(section) || "payroll".equals(section)) && !isAdmin) {
+            if (("team".equals(section) || "finance".equals(section) || "payroll".equals(section)
+                    || "plans".equals(section)) && !isAdmin) {
                 continue;
             }
             items.add(new DashboardController.NavigationItem(

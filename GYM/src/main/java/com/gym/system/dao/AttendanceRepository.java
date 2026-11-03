@@ -17,7 +17,7 @@ final class AttendanceRepository implements AttendanceDAO {
             connection.setAutoCommit(false);
             try (PreparedStatement find = connection.prepareStatement(SubscriptionRules.apply("""
                     SELECT s.id, m.full_name, s.plan_name, s.plan_type, s.remaining_sessions,
-                           s.total_sessions, s.start_date, s.end_date
+                           s.total_sessions, s.start_date, s.end_date, {PAID} AS paid
                     FROM subscriptions s JOIN members m ON m.id=s.member_id
                     WHERE s.member_id=? AND s.status='ACTIVE'
                       AND {USABLE}
@@ -35,6 +35,9 @@ final class AttendanceRepository implements AttendanceDAO {
                 try (ResultSet result = find.executeQuery()) {
                     if (!result.next()) {
                         throw new IllegalStateException("NO_VALID_SUBSCRIPTION");
+                    }
+                    if (!result.getBoolean("paid")) {
+                        throw new IllegalStateException("PAYMENT_PENDING");
                     }
                     subscriptionId = result.getInt("id");
                     memberName = result.getString("full_name");

@@ -7,7 +7,8 @@ import java.sql.SQLException;
 import java.time.YearMonth;
 import java.util.List;
 
-public interface GymDataAccess extends UserDAO, MemberDAO, SubscriptionDAO, AttendanceDAO, FinanceDAO, SettingsDAO {
+public interface GymDataAccess extends UserDAO, MemberDAO, SubscriptionDAO, AttendanceDAO, FinanceDAO, SettingsDAO,
+        PlanDAO {
 
     void addActivity(Activity activity) throws SQLException;
 

@@ -64,7 +64,7 @@ final class FinanceRepository implements FinanceDAO {
                         """
                                 SELECT (SELECT count(*) FROM members) members,
                                        (SELECT count(DISTINCT member_id) FROM subscriptions
-                                        WHERE status='ACTIVE' AND {USABLE}) active_members,
+                                        WHERE status='ACTIVE' AND {USABLE} AND {PAID}) active_members,
                                        (SELECT COALESCE(sum(amount),0) FROM payments
                                         WHERE status='PAID' AND strftime('%Y-%m', payment_date)={THIS_MONTH}) revenue,
                                        (SELECT COALESCE(sum(amount),0) FROM expenses

@@ -9,6 +9,7 @@ public final class Subscription {
     private int id;
     private int memberId;
     private Integer activityId;
+    private Integer classId;
     private String planName;
     private PlanType planType;
     private Integer durationMonths;
@@ -42,6 +43,7 @@ public final class Subscription {
     public int getId() { return id; }
     public int getMemberId() { return memberId; }
     public Integer getActivityId() { return activityId; }
+    public Integer getClassId() { return classId; }
     public String getPlanName() { return planName; }
     public PlanType getPlanType() { return planType; }
     public Integer getDurationMonths() { return durationMonths; }
@@ -55,6 +57,7 @@ public final class Subscription {
     public void setId(int id) { this.id = id; }
     public void setMemberId(int memberId) { this.memberId = memberId; }
     public void setActivityId(Integer activityId) { this.activityId = activityId; }
+    public void setClassId(Integer classId) { this.classId = classId; }
     public void setPlanName(String planName) {
         if (planName == null || planName.isBlank()) throw new IllegalArgumentException("Plan name is required.");
         this.planName = planName.trim();

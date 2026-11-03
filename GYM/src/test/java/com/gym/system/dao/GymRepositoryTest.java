@@ -110,7 +110,8 @@ class GymRepositoryTest {
                 GymRepository.MemberRow overview = repository.members().stream()
                                 .filter(row -> row.id() == member.id()).findFirst().orElseThrow();
                 assertEquals("10 session pack", overview.plan());
-                assertEquals("ACTIVE", overview.status());
+                assertEquals("UNPAID", overview.status());
+                assertEquals(0, repository.dashboard().activeMembers());
                 assertEquals(activity.nameEnglish(), overview.activityEnglish());
                 assertEquals("10 / 10", overview.remaining());
                 assertEquals("PENDING", overview.paymentStatus());
@@ -134,12 +135,18 @@ class GymRepositoryTest {
                 assertTrue(invoice.paymentDate().isBlank());
                 assertTrue(invoice.paymentId() > 0);
                 assertEquals(activity.nameEnglish(), invoice.activityEnglish());
+                IllegalStateException unpaid = assertThrows(IllegalStateException.class,
+                                () -> repository.checkInByQrCode(QrCodeService.memberCode(member.id())));
+                assertEquals("PAYMENT_PENDING", unpaid.getMessage());
+                repository.confirmOfflineSubscriptionPayment(subscription.id());
+                assertEquals("ACTIVE", repository.members().stream()
+                                .filter(row -> row.id() == member.id()).findFirst().orElseThrow().status());
+                assertEquals(1, repository.dashboard().activeMembers());
                 GymRepository.CheckInResult checkIn = repository.checkInByQrCode(QrCodeService.memberCode(member.id()));
                 assertEquals("Test Member", checkIn.memberName());
                 assertEquals("10 session pack", checkIn.planName());
                 assertTrue(checkIn.sessionBased());
                 assertEquals(9, checkIn.remainingSessions());
-                repository.confirmOfflineSubscriptionPayment(subscription.id());
                 assertEquals("PAID", repository.subscriptionInvoice(subscription.id()).paymentStatus());
                 assertFalse(repository.subscriptionInvoice(subscription.id()).paymentDate().isBlank());
                 assertEquals(900.0, repository.dashboard().revenue(), 0.001);
@@ -172,13 +179,14 @@ class GymRepositoryTest {
                 repository.addSubscription(new Subscription(0, timeBasedRow.id(), activity.id(), "Monthly gym",
                                 Subscription.PlanType.TIME_BASED, 1, null, null, LocalDate.now(),
                                 LocalDate.now().plusMonths(1), 500, 0, Subscription.Status.ACTIVE));
+                GymRepository.SubscriptionRow timeSubscription = repository.subscriptions().stream()
+                                .filter(row -> row.member().equals("Time Plan Member")).findFirst().orElseThrow();
+                repository.confirmOfflineSubscriptionPayment(timeSubscription.id());
                 GymRepository.CheckInResult timeCheckIn = repository
                                 .checkInByQrCode(QrCodeService.memberCode(timeBasedRow.id()));
                 assertFalse(timeCheckIn.sessionBased());
                 assertEquals("Monthly gym", timeCheckIn.planName());
                 assertEquals(LocalDate.now().plusMonths(1).toString(), timeCheckIn.endDate());
-                GymRepository.SubscriptionRow timeSubscription = repository.subscriptions().stream()
-                                .filter(row -> row.member().equals("Time Plan Member")).findFirst().orElseThrow();
                 repository.setSubscriptionStatus(timeSubscription.id(), "FROZEN");
                 assertThrows(IllegalStateException.class, () -> repository.checkIn(timeBasedRow.id()));
                 repository.setSubscriptionStatus(timeSubscription.id(), "ACTIVE");
@@ -189,7 +197,7 @@ class GymRepositoryTest {
                                 .findFirst().orElseThrow();
                 assertEquals(2, demand.members());
                 assertEquals(2, demand.checkIns());
-                assertEquals(900, demand.revenue(), 0.001);
+                assertEquals(1400, demand.revenue(), 0.001);
 
                 repository.addScheduledClass("Test class", activity.id(), null, 1, "09:00", "10:00", 16);
                 GymRepository.ScheduledClass scheduledClass = repository.scheduledClasses().stream()
@@ -199,8 +207,55 @@ class GymRepositoryTest {
                                 2, "10:00", "11:00", 20);
                 assertEquals("Updated class", repository.scheduledClasses().stream()
                                 .filter(row -> row.id() == scheduledClass.id()).findFirst().orElseThrow().title());
-                assertTrue(repository.memberClasses(member.id()).stream()
-                                .anyMatch(row -> row.title().equals("Updated class") && row.dayOfWeek() == 2));
+                repository.addPlan("Gold month", "TIME_BASED", 1, 450);
+                repository.addPlan("Ten visits", "SESSION_BASED", 10, 300);
+                GymRepository.PlanRow goldPlan = repository.plans().stream()
+                                .filter(row -> row.name().equals("Gold month")).findFirst().orElseThrow();
+                assertFalse(goldPlan.sessionBased());
+                assertEquals(1, goldPlan.amount());
+                repository.updatePlan(goldPlan.id(), "Gold month", "TIME_BASED", 2, 800);
+                assertEquals(2, repository.plans().stream()
+                                .filter(row -> row.id() == goldPlan.id()).findFirst().orElseThrow().amount());
+                assertEquals(2, repository.plans().size());
+                repository.deletePlan(goldPlan.id());
+                assertEquals(1, repository.plans().size());
+
+                repository.addScheduledClass("Seat test", activity.id(), null, 3, "18:00", "19:00", 1);
+                GymRepository.ScheduledClass seatClass = repository.scheduledClasses().stream()
+                                .filter(row -> row.title().equals("Seat test")).findFirst().orElseThrow();
+                assertTrue(repository.availableClasses(null).stream().anyMatch(row -> row.id() == seatClass.id()));
+                Subscription seatSubscription = new Subscription(0, 0, activity.id(), "Seat month",
+                                Subscription.PlanType.TIME_BASED, 1, null, null, LocalDate.now(),
+                                LocalDate.now().plusMonths(1), 400, 0, Subscription.Status.ACTIVE);
+                seatSubscription.setClassId(seatClass.id());
+                int seatMemberId = repository.registerMember(new Member(0, "Seat Member", "+201000000010", "",
+                                "FEMALE", ""), seatSubscription, true);
+                GymRepository.MemberRow seatMember = repository.members().stream()
+                                .filter(row -> row.id() == seatMemberId).findFirst().orElseThrow();
+                assertEquals("ACTIVE", seatMember.status());
+                assertEquals("PAID", seatMember.paymentStatus());
+                assertEquals(seatClass.id(), seatMember.classId());
+                assertEquals("Seat test", seatMember.classTitle());
+                assertEquals(LocalDate.now().plusMonths(1).toString(), seatMember.validity());
+                assertFalse(repository.availableClasses(null).stream().anyMatch(row -> row.id() == seatClass.id()));
+                assertTrue(repository.availableClasses(seatClass.id()).stream()
+                                .anyMatch(row -> row.id() == seatClass.id()));
+                int membersBefore = repository.members().size();
+                Subscription overflow = new Subscription(0, 0, activity.id(), "Overflow",
+                                Subscription.PlanType.TIME_BASED, 1, null, null, LocalDate.now(),
+                                LocalDate.now().plusMonths(1), 400, 0, Subscription.Status.ACTIVE);
+                overflow.setClassId(seatClass.id());
+                IllegalStateException full = assertThrows(IllegalStateException.class, () -> repository
+                                .registerMember(new Member(0, "Overflow Member", "+201000000011", "", "MALE", ""),
+                                                overflow, false));
+                assertEquals("CLASS_FULL", full.getMessage());
+                assertEquals(membersBefore, repository.members().size());
+                repository.changeSubscriptionClass(seatMember.subscriptionId(), null);
+                assertTrue(repository.availableClasses(null).stream().anyMatch(row -> row.id() == seatClass.id()));
+                repository.changeSubscriptionClass(seatMember.subscriptionId(), seatClass.id());
+                repository.setSubscriptionStatus(seatMember.subscriptionId(), "FROZEN");
+                assertFalse(repository.availableClasses(null).stream().anyMatch(row -> row.id() == seatClass.id()));
+                repository.deleteScheduledClass(seatClass.id());
                 repository.deleteScheduledClass(scheduledClass.id());
 
                 repository.addActivity(new Activity(0, "نشاط تجريبي", "Test activity", null));

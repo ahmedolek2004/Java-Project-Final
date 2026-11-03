@@ -149,4 +149,43 @@ class ServiceAuthorizationTest {
         subscriptions.setSubscriptionStatus(1, "ACTIVE");
         assertEquals(List.of("setSubscriptionStatus", "setSubscriptionStatus"), calls);
     }
+
+    @Test
+    void onlyAdministratorsCanManagePlans() throws Exception {
+        PlanService plans = new PlanService(repository, access);
+
+        signInAsReceptionist();
+        plans.getAllPlans();
+        assertThrows(AccessDeniedException.class, () -> plans.addPlan("Monthly", "TIME_BASED", 1, 500));
+        assertThrows(AccessDeniedException.class, () -> plans.updatePlan(1, "Monthly", "TIME_BASED", 1, 500));
+        assertThrows(AccessDeniedException.class, () -> plans.deletePlan(1));
+        assertEquals(List.of("plans"), calls);
+
+        signInAsAdmin();
+        plans.addPlan("Monthly", "TIME_BASED", 1, 500);
+        assertEquals(List.of("plans", "addPlan"), calls);
+    }
+
+    @Test
+    void hidingMedicalNotesKeepsTheRestOfTheMemberRow() {
+        MemberRow row = new MemberRow(1, "Test Member", "+201234567890", "t@gym.com", "MALE", "Asthma", "Basic",
+                "ACTIVE", 5, "TIME_BASED", "ar", "Boxing", "2026-01-01", "2026-02-01", "-", 500, "PAID", 3,
+                "Boxing basics", 1, "18:00", "19:00");
+        MemberRow hidden = row.withMedicalNotes(null);
+
+        assertNull(hidden.medicalNotes());
+        assertEquals(row.subscriptionId(), hidden.subscriptionId());
+        assertEquals(row.classId(), hidden.classId());
+        assertEquals(row.classTitle(), hidden.classTitle());
+        assertEquals(row.paymentStatus(), hidden.paymentStatus());
+        assertEquals(row.validity(), hidden.validity());
+    }
+
+    @Test
+    void registeringAMemberRequiresSigningIn() {
+        MemberService members = new MemberService(repository, access);
+        assertThrows(AccessDeniedException.class, () -> members.registerMember(null, null, true));
+        assertThrows(AccessDeniedException.class, () -> members.getAvailableClasses(null));
+        assertTrue(calls.isEmpty());
+    }
 }

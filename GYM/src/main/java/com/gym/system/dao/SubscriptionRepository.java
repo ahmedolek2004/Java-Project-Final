@@ -17,58 +17,111 @@ final class SubscriptionRepository implements SubscriptionDAO {
 
     @Override
     public void addSubscription(Subscription subscription) throws SQLException {
+        addSubscription(subscription, false);
+    }
+
+    @Override
+    public void addSubscription(Subscription subscription, boolean paidNow) throws SQLException {
+        try (Connection connection = DatabaseConnection.open()) {
+            connection.setAutoCommit(false);
+            try {
+                insertSubscription(connection, subscription, paidNow);
+                connection.commit();
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        }
+    }
+
+    static int insertSubscription(Connection connection, Subscription subscription, boolean paidNow)
+            throws SQLException {
         boolean sessionBased = subscription.getPlanType() == Subscription.PlanType.SESSION_BASED;
         int durationOrSessions = sessionBased ? subscription.getTotalSessions() : subscription.getDurationMonths();
         LocalDate startDate = subscription.getStartDate();
         String endDate = sessionBased ? null : startDate.plusMonths(durationOrSessions).toString();
+        double amount = subscription.getPrice() * (1 - subscription.getDiscountApplied() / 100);
         String sql = """
                 INSERT INTO subscriptions(member_id, plan_name, plan_type, duration_months, total_sessions,
                                            remaining_sessions, start_date, end_date, price, discount_applied, status,
-                                           activity_id)
-                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?)
+                                           activity_id, class_id)
+                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
                 """;
+        String paymentSql = SqlClock.apply(paidNow
+                ? "INSERT INTO payments(member_id, description, amount, payment_date, status, subscription_id) "
+                        + "VALUES(?, ?, ?, {TODAY}, 'PAID', ?)"
+                : "INSERT INTO payments(member_id, description, amount, payment_date, status, subscription_id) "
+                        + "VALUES(?, ?, ?, '', 'PENDING', ?)");
+        try (PreparedStatement expire = connection.prepareStatement(
+                "UPDATE subscriptions SET status='EXPIRED' WHERE member_id=? AND status='ACTIVE'");
+                PreparedStatement insert = connection.prepareStatement(sql);
+                PreparedStatement payment = connection.prepareStatement(paymentSql)) {
+            expire.setInt(1, subscription.getMemberId());
+            expire.executeUpdate();
+            Integer classId = subscription.getClassId();
+            Integer activityId = subscription.getActivityId();
+            if (classId != null) {
+                ClassCapacity.requireFreeSeat(connection, classId, null);
+                activityId = ClassCapacity.activityOf(connection, classId);
+            }
+            insert.setInt(1, subscription.getMemberId());
+            insert.setString(2, subscription.getPlanName());
+            insert.setString(3, sessionBased ? "SESSION_BASED" : "TIME_BASED");
+            insert.setObject(4, sessionBased ? null : durationOrSessions);
+            insert.setObject(5, sessionBased ? durationOrSessions : null);
+            insert.setObject(6, sessionBased ? durationOrSessions : null);
+            insert.setString(7, startDate.toString());
+            insert.setString(8, endDate);
+            insert.setDouble(9, amount);
+            insert.setDouble(10, subscription.getDiscountApplied());
+            if (activityId == null) {
+                insert.setNull(11, Types.INTEGER);
+            } else {
+                insert.setInt(11, activityId);
+            }
+            if (classId == null) {
+                insert.setNull(12, Types.INTEGER);
+            } else {
+                insert.setInt(12, classId);
+            }
+            insert.executeUpdate();
+            int subscriptionId;
+            try (Statement identity = connection.createStatement();
+                    ResultSet result = identity.executeQuery("SELECT last_insert_rowid()")) {
+                if (!result.next()) {
+                    throw new SQLException("Could not determine the new subscription ID.");
+                }
+                subscriptionId = result.getInt(1);
+            }
+            payment.setInt(1, subscription.getMemberId());
+            payment.setString(2, subscription.getPlanName());
+            payment.setDouble(3, amount);
+            payment.setInt(4, subscriptionId);
+            payment.executeUpdate();
+            return subscriptionId;
+        }
+    }
+
+    @Override
+    public void changeSubscriptionClass(int subscriptionId, Integer classId) throws SQLException {
         try (Connection connection = DatabaseConnection.open()) {
             connection.setAutoCommit(false);
-            try (PreparedStatement expire = connection.prepareStatement(
-                    "UPDATE subscriptions SET status='EXPIRED' WHERE member_id=? AND status='ACTIVE'");
-                    PreparedStatement insert = connection.prepareStatement(sql);
-                    PreparedStatement payment = connection.prepareStatement(
-                            "INSERT INTO payments(member_id, description, amount, payment_date, status, subscription_id) "
-                                    + "VALUES(?, ?, ?, ?, 'PENDING', ?)")) {
-                expire.setInt(1, subscription.getMemberId());
-                expire.executeUpdate();
-                insert.setInt(1, subscription.getMemberId());
-                insert.setString(2, subscription.getPlanName());
-                insert.setString(3, sessionBased ? "SESSION_BASED" : "TIME_BASED");
-                insert.setObject(4, sessionBased ? null : durationOrSessions);
-                insert.setObject(5, sessionBased ? durationOrSessions : null);
-                insert.setObject(6, sessionBased ? durationOrSessions : null);
-                insert.setString(7, startDate.toString());
-                insert.setString(8, endDate);
-                insert.setDouble(9, subscription.getPrice() * (1 - subscription.getDiscountApplied() / 100));
-                insert.setDouble(10, subscription.getDiscountApplied());
-                if (subscription.getActivityId() == null) {
-                    insert.setNull(11, Types.INTEGER);
+            try (PreparedStatement update = connection.prepareStatement(
+                    "UPDATE subscriptions SET class_id=?, activity_id=? WHERE id=?")) {
+                if (classId == null) {
+                    update.setNull(1, Types.INTEGER);
+                    update.setNull(2, Types.INTEGER);
                 } else {
-                    insert.setInt(11, subscription.getActivityId());
+                    ClassCapacity.requireFreeSeat(connection, classId, subscriptionId);
+                    update.setInt(1, classId);
+                    update.setInt(2, ClassCapacity.activityOf(connection, classId));
                 }
-                insert.executeUpdate();
-                int subscriptionId;
-                try (Statement identity = connection.createStatement();
-                        ResultSet result = identity.executeQuery("SELECT last_insert_rowid()")) {
-                    if (!result.next()) {
-                        throw new SQLException("Could not determine the new subscription ID.");
-                    }
-                    subscriptionId = result.getInt(1);
-                }
-                payment.setInt(1, subscription.getMemberId());
-                payment.setString(2, subscription.getPlanName());
-                payment.setDouble(3, subscription.getPrice() * (1 - subscription.getDiscountApplied() / 100));
-                payment.setString(4, "");
-                payment.setInt(5, subscriptionId);
-                payment.executeUpdate();
+                update.setInt(3, subscriptionId);
+                update.executeUpdate();
                 connection.commit();
-            } catch (SQLException exception) {
+            } catch (SQLException | RuntimeException exception) {
                 connection.rollback();
                 throw exception;
             } finally {

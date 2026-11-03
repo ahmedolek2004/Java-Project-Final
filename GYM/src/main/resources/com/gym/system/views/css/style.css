@@ -383,6 +383,24 @@
     -fx-padding: 2px 8px;
 }
 
+.text-area,
+.text-area .content {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #0f172a;
+}
+
+.text-area {
+    -fx-background-radius: 9px;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 9px;
+    -fx-border-width: 1px;
+    -fx-padding: 4px 8px;
+}
+
+.text-area:focused {
+    -fx-border-color: -gym-accent;
+}
+
 .combo-box-base > .list-cell,
 .combo-box-base:focused > .list-cell,
 .combo-box-base:showing > .list-cell {
@@ -954,8 +972,120 @@
     -fx-padding: 9px 10px;
 }
 
+.members-table .table-cell {
+    -fx-padding: 13px 8px;
+}
+
+.compact .members-table .table-cell {
+    -fx-padding: 9px 8px;
+}
+
 .compact .detail-scroll {
-    -fx-pref-width: 330px;
+    -fx-pref-width: 320px;
+}
+
+.dialog-pane.wizard-dialog .wizard-badge {
+    -fx-background-color: #e2e8f0;
+    -fx-background-radius: 12px;
+    -fx-text-fill: #475569;
+    -fx-min-width: 24px;
+    -fx-min-height: 24px;
+    -fx-alignment: center;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+}
+
+.dialog-pane.wizard-dialog .wizard-badge.wizard-active {
+    -fx-background-color: -gym-accent;
+    -fx-text-fill: -gym-on-accent;
+}
+
+.dialog-pane.wizard-dialog .wizard-badge.wizard-done {
+    -fx-background-color: #d1fae5;
+    -fx-text-fill: #047857;
+}
+
+.dialog-pane.wizard-dialog .wizard-caption {
+    -fx-text-fill: #64748b;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+
+.dialog-pane.wizard-dialog .wizard-caption.wizard-active {
+    -fx-text-fill: #0f172a;
+    -fx-font-weight: 800;
+}
+
+.dialog-pane.wizard-dialog .wizard-caption.wizard-done {
+    -fx-text-fill: #047857;
+}
+
+.wizard-line {
+    -fx-background-color: #e2e8f0;
+}
+
+.dialog-pane.wizard-dialog .wizard-field-label {
+    -fx-text-fill: #475569;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+
+.dialog-pane.wizard-dialog .wizard-note {
+    -fx-text-fill: #64748b;
+    -fx-font-size: 12px;
+}
+
+.dialog-pane.wizard-dialog .wizard-summary,
+.dialog-pane.wizard-dialog .wizard-review-value {
+    -fx-text-fill: #0f172a;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.class-list {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 10px;
+    -fx-border-color: #e2e8f0;
+    -fx-border-radius: 10px;
+    -fx-padding: 2px;
+}
+
+.class-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8px;
+    -fx-padding: 8px 12px;
+    -fx-text-fill: #0f172a;
+}
+
+.class-list .list-cell:filled:hover {
+    -fx-background-color: #f1f5f9;
+}
+
+.class-list .list-cell:filled:selected,
+.class-list .list-cell:filled:selected:hover {
+    -fx-background-color: -gym-accent-soft;
+    -fx-border-color: -gym-accent;
+    -fx-border-radius: 8px;
+}
+
+.class-list .placeholder .label {
+    -fx-text-fill: #64748b;
+}
+
+.dialog-pane.wizard-dialog .label.class-cell-title {
+    -fx-text-fill: #0f172a;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+}
+
+.dialog-pane.wizard-dialog .label.class-cell-detail {
+    -fx-text-fill: #64748b;
+    -fx-font-size: 11px;
+}
+
+.status-pill.status-UNPAID {
+    -fx-background-color: #fef3c7;
+    -fx-text-fill: #92400e;
 }
 
 /* ==========================================================================
@@ -1500,4 +1630,165 @@
 .root.dark-theme .status-pill.status-NONE {
     -fx-background-color: #1e293b;
     -fx-text-fill: #94a3b8;
+}
+
+.root.dark-theme .status-pill.status-UNPAID {
+    -fx-background-color: rgba(245, 158, 11, 0.18);
+    -fx-text-fill: #fcd34d;
+}
+
+.dialog-pane.dark-dialog.wizard-dialog .wizard-badge {
+    -fx-background-color: #1e293b;
+    -fx-text-fill: #94a3b8;
+}
+
+.dialog-pane.dark-dialog.wizard-dialog .wizard-badge.wizard-active {
+    -fx-background-color: -gym-accent;
+    -fx-text-fill: -gym-on-accent;
+}
+
+.dialog-pane.dark-dialog.wizard-dialog .wizard-badge.wizard-done {
+    -fx-background-color: rgba(16, 185, 129, 0.2);
+    -fx-text-fill: #6ee7b7;
+}
+
+.dialog-pane.dark-dialog.wizard-dialog .wizard-caption {
+    -fx-text-fill: #94a3b8;
+}
+
+.dialog-pane.dark-dialog.wizard-dialog .wizard-caption.wizard-active {
+    -fx-text-fill: #f8fafc;
+}
+
+.dialog-pane.dark-dialog.wizard-dialog .wizard-caption.wizard-done {
+    -fx-text-fill: #6ee7b7;
+}
+
+.dialog-pane.dark-dialog .wizard-line {
+    -fx-background-color: #253347;
+}
+
+.dialog-pane.dark-dialog.wizard-dialog .wizard-field-label {
+    -fx-text-fill: #94a3b8;
+}
+
+.dialog-pane.dark-dialog.wizard-dialog .wizard-note {
+    -fx-text-fill: #94a3b8;
+}
+
+.dialog-pane.dark-dialog.wizard-dialog .wizard-summary,
+.dialog-pane.dark-dialog.wizard-dialog .wizard-review-value {
+    -fx-text-fill: #f8fafc;
+}
+
+.dialog-pane.dark-dialog .class-list {
+    -fx-background-color: #0d1322;
+    -fx-border-color: #253347;
+}
+
+.dialog-pane.dark-dialog .class-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #e2e8f0;
+}
+
+.dialog-pane.dark-dialog .class-list .list-cell:filled:hover {
+    -fx-background-color: #1c273e;
+}
+
+.dialog-pane.dark-dialog .class-list .list-cell:filled:selected,
+.dialog-pane.dark-dialog .class-list .list-cell:filled:selected:hover {
+    -fx-background-color: -gym-accent-soft;
+    -fx-border-color: -gym-accent;
+}
+
+.dialog-pane.dark-dialog .class-list .placeholder .label {
+    -fx-text-fill: #94a3b8;
+}
+
+.dialog-pane.dark-dialog.wizard-dialog .label.class-cell-title {
+    -fx-text-fill: #f8fafc;
+}
+
+.dialog-pane.dark-dialog.wizard-dialog .label.class-cell-detail {
+    -fx-text-fill: #94a3b8;
+}
+
+.dialog-pane.dark-dialog .combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell {
+    -fx-background-color: #131b2e;
+    -fx-text-fill: #e2e8f0;
+}
+
+.dialog-pane.dark-dialog .combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:hover,
+.dialog-pane.dark-dialog .combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected {
+    -fx-background-color: -gym-accent-soft;
+    -fx-text-fill: #f8fafc;
+}
+
+.dialog-pane.dark-dialog .date-picker-popup > .month-year-pane {
+    -fx-background-color: #0d1322;
+}
+
+.dialog-pane.dark-dialog .date-picker-popup > .calendar-grid > .day-cell {
+    -fx-background-color: #131b2e;
+    -fx-text-fill: #e2e8f0;
+}
+
+.dialog-pane.dark-dialog .date-picker-popup > .calendar-grid > .day-cell:hover {
+    -fx-background-color: -gym-accent-soft;
+    -fx-text-fill: #f8fafc;
+}
+
+.dialog-pane.dark-dialog .date-picker-popup > .calendar-grid > .day-cell:selected,
+.dialog-pane.dark-dialog .date-picker-popup > .calendar-grid > .day-cell:selected:hover,
+.dialog-pane.dark-dialog .date-picker-popup > .calendar-grid > .selected {
+    -fx-background-color: -gym-accent;
+    -fx-text-fill: -gym-on-accent;
+    -fx-font-weight: 700;
+}
+
+.dialog-pane.dark-dialog .date-picker-popup > .calendar-grid > .day-name-cell,
+.dialog-pane.dark-dialog .date-picker-popup > .calendar-grid > .week-number-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #94a3b8;
+}
+
+.dialog-pane.dark-dialog .date-picker-popup .spinner .button,
+.dialog-pane.dark-dialog .date-picker-popup .spinner .button:hover,
+.dialog-pane.dark-dialog .date-picker-popup .spinner .button:pressed {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-effect: none;
+}
+
+.dialog-pane.dark-dialog .date-picker-popup .spinner .button .left-arrow,
+.dialog-pane.dark-dialog .date-picker-popup .spinner .button .right-arrow {
+    -fx-background-color: #cbd5e1;
+}
+
+.dialog-pane.dark-dialog .date-picker-popup .spinner .label {
+    -fx-text-fill: #f8fafc;
+}
+
+.dialog-pane.dark-dialog .text-area,
+.dialog-pane.dark-dialog .text-area .content {
+    -fx-background-color: #0d1322;
+    -fx-text-fill: #f8fafc;
+}
+
+.dialog-pane.dark-dialog .text-area {
+    -fx-border-color: #253347;
+}
+
+.dialog-pane.dark-dialog .check-box > .box {
+    -fx-background-color: #0d1322;
+    -fx-border-color: #475569;
+}
+
+.dialog-pane.dark-dialog .check-box:selected > .box {
+    -fx-background-color: -gym-accent;
+    -fx-border-color: -gym-accent;
+}
+
+.dialog-pane.dark-dialog .check-box:selected > .box > .mark {
+    -fx-background-color: -gym-on-accent;
 }

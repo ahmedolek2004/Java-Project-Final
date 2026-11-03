@@ -1,11 +1,9 @@
 package com.gym.system.service;
 
 import com.gym.system.dao.GymDataAccess;
-import com.gym.system.dao.GymRepository.MemberClass;
-import com.gym.system.dao.GymRepository.MemberRow;
-import com.gym.system.dao.GymRepository.MemberSubscription;
-import com.gym.system.dao.GymRepository.MemberVisit;
+import com.gym.system.dao.GymRepository;
 import com.gym.system.model.Member;
+import com.gym.system.model.Subscription;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -23,26 +21,26 @@ public class MemberService {
         this.access = access;
     }
 
-    public List<MemberRow> getAllMembers() throws SQLException {
+    public List<GymRepository.MemberRow> getAllMembers() throws SQLException {
         access.requireSignedIn();
-        List<MemberRow> rows = repository.members();
+        List<GymRepository.MemberRow> rows = repository.members();
         if (access.isAdmin()) {
             return rows;
         }
-        return rows.stream().map(MemberService::withoutMedicalNotes).toList();
+        return rows.stream().map(row -> row.withMedicalNotes(null)).toList();
     }
 
-    public List<MemberSubscription> getSubscriptions(int memberId) throws SQLException {
+    public List<GymRepository.MemberSubscription> getSubscriptions(int memberId) throws SQLException {
         access.requireSignedIn();
         return repository.memberSubscriptions(memberId);
     }
 
-    public List<MemberClass> getClasses(int memberId) throws SQLException {
+    public List<GymRepository.ClassSeat> getAvailableClasses(Integer includeClassId) throws SQLException {
         access.requireSignedIn();
-        return repository.memberClasses(memberId);
+        return repository.availableClasses(includeClassId);
     }
 
-    public List<MemberVisit> getRecentVisits(int memberId, int limit) throws SQLException {
+    public List<GymRepository.MemberVisit> getRecentVisits(int memberId, int limit) throws SQLException {
         access.requireSignedIn();
         return repository.memberVisits(memberId, limit);
     }
@@ -50,6 +48,11 @@ public class MemberService {
     public void addMember(Member member) throws SQLException {
         access.requireSignedIn();
         repository.addMember(member);
+    }
+
+    public int registerMember(Member member, Subscription subscription, boolean paidNow) throws SQLException {
+        access.requireSignedIn();
+        return repository.registerMember(member, subscription, paidNow);
     }
 
     public void updateMember(int id, Member member) throws SQLException {
@@ -60,15 +63,10 @@ public class MemberService {
     private Member keepingStoredNotes(int id, Member member) throws SQLException {
         String storedNotes = repository.members().stream()
                 .filter(row -> row.id() == id)
-                .map(MemberRow::medicalNotes)
+                .map(GymRepository.MemberRow::medicalNotes)
                 .findFirst()
                 .orElse(null);
         return new Member(member.getId(), member.getFullName(), member.getPhone(), member.getEmail(),
                 member.getGender(), storedNotes);
-    }
-
-    private static MemberRow withoutMedicalNotes(MemberRow row) {
-        return new MemberRow(row.id(), row.fullName(), row.phone(), row.email(), row.gender(),
-                null, row.plan(), row.status());
     }
 }

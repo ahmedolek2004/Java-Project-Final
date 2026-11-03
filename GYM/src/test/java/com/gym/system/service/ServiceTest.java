@@ -3,8 +3,7 @@ package com.gym.system.service;
 import com.gym.system.controller.helper.AppearanceHelper;
 import com.gym.system.controller.helper.NavigationHelper;
 import com.gym.system.dao.GymDataAccess;
-import com.gym.system.dao.GymRepository.CheckInResult;
-import com.gym.system.dao.GymRepository.MemberRow;
+import com.gym.system.dao.GymRepository;
 import com.gym.system.model.*;
 import com.gym.system.util.AppearanceSettings;
 import javafx.scene.paint.Color;
@@ -14,11 +13,11 @@ import org.junit.jupiter.api.Test;
 import java.lang.reflect.Proxy;
 import java.sql.SQLException;
 import java.time.LocalDate;
-// import java.time.YearMonth;
-// import java.util.ArrayList;
+import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-// import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -56,7 +55,7 @@ class ServiceTest {
                         return null;
                     }
                     if ("members".equals(name)) {
-                        return List.of(new MemberRow(1, "Test Member", "+201234567890", "test@gym.com", "MALE", "None", "Basic", "ACTIVE"));
+                        return List.of(new GymRepository.MemberRow(1, "Test Member", "+201234567890", "test@gym.com", "MALE", "None", "Basic", "ACTIVE"));
                     }
                     if ("addSubscription".equals(name)) {
                         addSubscriptionCalled = true;
@@ -67,11 +66,11 @@ class ServiceTest {
                     }
                     if ("checkIn".equals(name)) {
                         checkInCalled = true;
-                        return new CheckInResult(1, "Ahmed", "Monthly", "TIME_BASED", 0, 0, "2026-01-01", "2026-02-01");
+                        return new GymRepository.CheckInResult(1, "Ahmed", "Monthly", "TIME_BASED", 0, 0, "2026-01-01", "2026-02-01");
                     }
                     if ("checkInByQrCode".equals(name)) {
                         checkInCalled = true;
-                        return new CheckInResult(1, "Ahmed", "Monthly", "TIME_BASED", 0, 0, "2026-01-01", "2026-02-01");
+                        return new GymRepository.CheckInResult(1, "Ahmed", "Monthly", "TIME_BASED", 0, 0, "2026-01-01", "2026-02-01");
                     }
                     if ("addCoach".equals(name)) {
                         addCoachCalled = true;
@@ -100,7 +99,7 @@ class ServiceTest {
         memberService.updateMember(1, member);
         assertTrue(updateMemberCalled);
 
-        List<MemberRow> list = memberService.getAllMembers();
+        List<GymRepository.MemberRow> list = memberService.getAllMembers();
         assertEquals(1, list.size());
         assertEquals("Test Member", list.get(0).fullName());
     }
@@ -115,7 +114,7 @@ class ServiceTest {
 
     @Test
     void attendanceServiceDelegatesToRepository() throws SQLException {
-        CheckInResult res = attendanceService.checkIn(1);
+        GymRepository.CheckInResult res = attendanceService.checkIn(1);
         assertEquals("Ahmed", res.memberName());
         assertTrue(checkInCalled);
 

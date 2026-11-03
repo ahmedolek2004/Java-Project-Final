@@ -1,6 +1,7 @@
 package com.gym.system.dao;
 
 import com.gym.system.model.Member;
+import com.gym.system.model.Subscription;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -21,7 +22,8 @@ final class MemberRepository implements MemberDAO {
                        COALESCE(s.plan_name, '-') AS plan,
                        CASE WHEN s.id IS NULL THEN 'NONE'
                             WHEN s.status = 'FROZEN' AND %2$s THEN 'FROZEN'
-                            WHEN s.status = 'ACTIVE' AND %2$s THEN 'ACTIVE'
+                            WHEN s.status = 'ACTIVE' AND %2$s AND %3$s THEN 'ACTIVE'
+                            WHEN s.status = 'ACTIVE' AND %2$s THEN 'UNPAID'
                             ELSE 'EXPIRED' END AS status,
                        COALESCE(s.id, 0) AS subscription_id, COALESCE(s.plan_type, '') AS plan_type,
                        COALESCE(a.name_ar, '') AS activity_ar, COALESCE(a.name_en, '') AS activity_en,
@@ -31,12 +33,17 @@ final class MemberRepository implements MemberDAO {
                             ELSE '-' END AS remaining,
                        COALESCE(s.price, 0) AS price,
                        COALESCE((SELECT p.status FROM payments p WHERE p.subscription_id = s.id LIMIT 1),
-                                'NOT_RECORDED') AS payment_status
+                                'NOT_RECORDED') AS payment_status,
+                       COALESCE(s.class_id, 0) AS class_id, COALESCE(c.title, '') AS class_title,
+                       COALESCE(c.day_of_week, 0) AS class_day, COALESCE(c.start_time, '') AS class_start,
+                       COALESCE(c.end_time, '') AS class_end
                 FROM members m
                 LEFT JOIN subscriptions s ON s.id = %1$s
                 LEFT JOIN activities a ON a.id = s.activity_id
+                LEFT JOIN class_schedule c ON c.id = s.class_id
                 ORDER BY m.id DESC
-                """.formatted(currentSubscriptionId("m.id"), SubscriptionRules.usableCondition("s."));
+                """.formatted(currentSubscriptionId("m.id"), SubscriptionRules.usableCondition("s."),
+                SubscriptionRules.paidCondition("s."));
         try (Connection connection = DatabaseConnection.open();
                 Statement statement = connection.createStatement();
                 ResultSet result = statement.executeQuery(sql)) {
@@ -50,7 +57,9 @@ final class MemberRepository implements MemberDAO {
                         result.getString("activity_ar"), result.getString("activity_en"),
                         result.getString("start_date"), result.getString("end_date"),
                         result.getString("remaining"), result.getDouble("price"),
-                        result.getString("payment_status")));
+                        result.getString("payment_status"), result.getInt("class_id"),
+                        result.getString("class_title"), result.getInt("class_day"),
+                        result.getString("class_start"), result.getString("class_end")));
             }
             return rows;
         }
@@ -60,7 +69,8 @@ final class MemberRepository implements MemberDAO {
     public List<GymRepository.MemberSubscription> memberSubscriptions(int memberId) throws SQLException {
         String sql = """
                 SELECT s.id, s.plan_name, s.plan_type, COALESCE(a.name_ar, '') AS activity_ar,
-                       COALESCE(a.name_en, '') AS activity_en, s.start_date, COALESCE(s.end_date, '-') AS end_date,
+                       COALESCE(a.name_en, '') AS activity_en, COALESCE(c.title, '') AS class_title,
+                       s.start_date, COALESCE(s.end_date, '-') AS end_date,
                        CASE WHEN s.plan_type = 'SESSION_BASED'
                             THEN printf('%d / %d', s.remaining_sessions, s.total_sessions)
                             ELSE '-' END AS remaining,
@@ -70,6 +80,7 @@ final class MemberRepository implements MemberDAO {
                        COALESCE((SELECT p.status FROM payments p WHERE p.subscription_id = s.id LIMIT 1),
                                 'NOT_RECORDED') AS payment_status
                 FROM subscriptions s LEFT JOIN activities a ON a.id = s.activity_id
+                LEFT JOIN class_schedule c ON c.id = s.class_id
                 WHERE s.member_id = ? ORDER BY s.id DESC
                 """;
         try (Connection connection = DatabaseConnection.open();
@@ -81,6 +92,7 @@ final class MemberRepository implements MemberDAO {
                     rows.add(new GymRepository.MemberSubscription(result.getInt("id"),
                             result.getString("plan_name"), result.getString("plan_type"),
                             result.getString("activity_ar"), result.getString("activity_en"),
+                            result.getString("class_title"),
                             result.getString("start_date"), result.getString("end_date"),
                             result.getString("remaining"), result.getDouble("price"),
                             result.getString("status"), result.getString("payment_status")));
@@ -91,26 +103,42 @@ final class MemberRepository implements MemberDAO {
     }
 
     @Override
-    public List<GymRepository.MemberClass> memberClasses(int memberId) throws SQLException {
-        String sql = """
-                SELECT c.title, c.day_of_week, c.start_time, c.end_time, COALESCE(co.name, '-') AS coach
-                FROM class_schedule c LEFT JOIN coaches co ON co.id = c.coach_id
-                WHERE c.active = 1 AND c.activity_id = (
-                    SELECT s.activity_id FROM subscriptions s WHERE s.id = %s)
-                ORDER BY c.day_of_week, c.start_time, c.title
-                """.formatted(currentSubscriptionId("?"));
-        try (Connection connection = DatabaseConnection.open();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, memberId);
-            statement.setInt(2, memberId);
-            try (ResultSet result = statement.executeQuery()) {
-                List<GymRepository.MemberClass> rows = new ArrayList<>();
-                while (result.next()) {
-                    rows.add(new GymRepository.MemberClass(result.getString("title"), result.getInt("day_of_week"),
-                            result.getString("start_time"), result.getString("end_time"),
-                            result.getString("coach")));
+    public List<GymRepository.ClassSeat> availableClasses(Integer includeClassId) throws SQLException {
+        return new ClubRepository().availableClasses(includeClassId);
+    }
+
+    @Override
+    public int registerMember(Member member, Subscription subscription, boolean paidNow) throws SQLException {
+        try (Connection connection = DatabaseConnection.open()) {
+            connection.setAutoCommit(false);
+            try {
+                int memberId;
+                try (PreparedStatement insert = connection.prepareStatement("""
+                        INSERT INTO members(full_name, phone, email, gender, medical_notes) VALUES(?, ?, ?, ?, ?)
+                        """)) {
+                    insert.setString(1, member.getFullName());
+                    insert.setString(2, member.getPhone());
+                    insert.setString(3, emptyToNull(member.getEmail()));
+                    insert.setString(4, emptyToNull(member.getGender()));
+                    insert.setString(5, emptyToNull(member.getMedicalNotes()));
+                    insert.executeUpdate();
                 }
-                return rows;
+                try (Statement identity = connection.createStatement();
+                        ResultSet result = identity.executeQuery("SELECT last_insert_rowid()")) {
+                    if (!result.next()) {
+                        throw new SQLException("Could not determine the new member ID.");
+                    }
+                    memberId = result.getInt(1);
+                }
+                subscription.setMemberId(memberId);
+                SubscriptionRepository.insertSubscription(connection, subscription, paidNow);
+                connection.commit();
+                return memberId;
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(true);
             }
         }
     }

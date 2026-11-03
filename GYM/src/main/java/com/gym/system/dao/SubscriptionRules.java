@@ -10,7 +10,15 @@ final class SubscriptionRules {
     /** Placeholder that is replaced by the "usable now" condition. */
     static final String USABLE_PLACEHOLDER = "{USABLE}";
 
+    static final String PAID_PLACEHOLDER = "{PAID}";
+
     private SubscriptionRules() {
+    }
+
+    static String paidCondition(String alias) {
+        String idColumn = alias.isEmpty() ? "subscriptions.id" : alias + "id";
+        return "EXISTS (SELECT 1 FROM payments pay WHERE pay.subscription_id = " + idColumn
+                + " AND pay.status='PAID')";
     }
 
     /**
@@ -31,6 +39,7 @@ final class SubscriptionRules {
      * also resolves the {@link SqlClock} placeholders.
      */
     static String apply(String sql, String alias) {
-        return SqlClock.apply(sql.replace(USABLE_PLACEHOLDER, usableCondition(alias)));
+        return SqlClock.apply(sql.replace(USABLE_PLACEHOLDER, usableCondition(alias))
+                .replace(PAID_PLACEHOLDER, paidCondition(alias)));
     }
 }

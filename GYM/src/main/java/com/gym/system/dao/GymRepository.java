@@ -25,6 +25,7 @@ public final class GymRepository implements GymDataAccess {
     private final AttendanceRepository attendanceRepository = new AttendanceRepository();
     private final FinanceRepository financeRepository = new FinanceRepository();
     private final SettingsRepository settingsRepository = new SettingsRepository();
+    private final PlanRepository planRepository = new PlanRepository();
 
     public GymRepository() throws SQLException, GeneralSecurityException {
         userRepository.seedDefaults();
@@ -164,8 +165,44 @@ public final class GymRepository implements GymDataAccess {
     }
 
     @Override
-    public List<MemberClass> memberClasses(int memberId) throws SQLException {
-        return memberRepository.memberClasses(memberId);
+    public int registerMember(Member member, Subscription subscription, boolean paidNow) throws SQLException {
+        return memberRepository.registerMember(member, subscription, paidNow);
+    }
+
+    @Override
+    public List<ClassSeat> availableClasses(Integer includeClassId) throws SQLException {
+        return memberRepository.availableClasses(includeClassId);
+    }
+
+    @Override
+    public void addSubscription(Subscription subscription, boolean paidNow) throws SQLException {
+        subscriptionRepository.addSubscription(subscription, paidNow);
+    }
+
+    @Override
+    public void changeSubscriptionClass(int subscriptionId, Integer classId) throws SQLException {
+        subscriptionRepository.changeSubscriptionClass(subscriptionId, classId);
+    }
+
+    @Override
+    public List<PlanRow> plans() throws SQLException {
+        return planRepository.plans();
+    }
+
+    @Override
+    public void addPlan(String name, String planType, int durationOrSessions, double price) throws SQLException {
+        planRepository.addPlan(name, planType, durationOrSessions, price);
+    }
+
+    @Override
+    public void updatePlan(int id, String name, String planType, int durationOrSessions, double price)
+            throws SQLException {
+        planRepository.updatePlan(id, name, planType, durationOrSessions, price);
+    }
+
+    @Override
+    public void deletePlan(int id) throws SQLException {
+        planRepository.deletePlan(id);
     }
 
     @Override
@@ -261,19 +298,48 @@ public final class GymRepository implements GymDataAccess {
     public record MemberRow(int id, String fullName, String phone, String email, String gender,
             String medicalNotes, String plan, String status, int subscriptionId, String planType,
             String activityArabic, String activityEnglish, String startDate, String endDate,
-            String remaining, double price, String paymentStatus) {
+            String remaining, double price, String paymentStatus, int classId, String classTitle,
+            int classDay, String classStart, String classEnd) {
         public MemberRow(int id, String fullName, String phone, String email, String gender,
                 String medicalNotes, String plan, String status) {
             this(id, fullName, phone, email, gender, medicalNotes, plan, status, 0, "", "", "", "", "", "-", 0,
-                    "NOT_RECORDED");
+                    "NOT_RECORDED", 0, "", 0, "", "");
+        }
+
+        public MemberRow withMedicalNotes(String notes) {
+            return new MemberRow(id, fullName, phone, email, gender, notes, plan, status, subscriptionId, planType,
+                    activityArabic, activityEnglish, startDate, endDate, remaining, price, paymentStatus, classId,
+                    classTitle, classDay, classStart, classEnd);
+        }
+
+        public String validity() {
+            if (subscriptionId == 0) {
+                return "-";
+            }
+            return "SESSION_BASED".equals(planType) ? remaining : endDate;
+        }
+    }
+
+    public record PlanRow(int id, String name, String type, int durationMonths, int totalSessions, double price) {
+        public boolean sessionBased() {
+            return "SESSION_BASED".equals(type);
+        }
+
+        public int amount() {
+            return sessionBased() ? totalSessions : durationMonths;
+        }
+    }
+
+    public record ClassSeat(int id, String title, int activityId, String activityArabic, String activityEnglish,
+            String coach, int dayOfWeek, String startTime, String endTime, int capacity, int taken) {
+        public int free() {
+            return capacity - taken;
         }
     }
 
     public record MemberSubscription(int id, String plan, String type, String activityArabic,
-            String activityEnglish, String startDate, String endDate, String remaining, double price,
-            String status, String paymentStatus) {}
-
-    public record MemberClass(String title, int dayOfWeek, String startTime, String endTime, String coach) {}
+            String activityEnglish, String classTitle, String startDate, String endDate, String remaining,
+            double price, String status, String paymentStatus) {}
 
     public record MemberVisit(String checkedInAt, String plan) {}
 

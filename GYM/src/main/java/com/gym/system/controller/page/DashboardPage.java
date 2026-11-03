@@ -1,6 +1,5 @@
 package com.gym.system.controller.page;
 
-import com.gym.system.controller.form.MemberForm;
 import com.gym.system.controller.helper.DatabaseBackupHelper;
 import com.gym.system.controller.helper.MetricCardFactory;
 import com.gym.system.controller.helper.PageContext;
@@ -44,18 +43,7 @@ public class DashboardPage {
 
         Button addMemberBtn = new Button(ctx.t("members.add"));
         addMemberBtn.getStyleClass().add("primary-button");
-        addMemberBtn.setOnAction(e -> {
-            Optional<Member> member = MemberForm.showAdd(ctx.isDarkMode(), ctx.isArabic(), ctx.tFunction());
-            member.ifPresent(m -> {
-                try {
-                    ctx.repository().addMember(m);
-                    ctx.showInfo().accept(ctx.t("attendance.success"));
-                    ctx.navigateTo().accept("members");
-                } catch (Exception ex) {
-                    ctx.showError().accept(ctx.t("error.save") + "\n" + ex.getMessage());
-                }
-            });
-        });
+        addMemberBtn.setOnAction(e -> ctx.navigateTo().accept("members:add"));
 
         Button printReportBtn = new Button(ctx.t("print.report"));
         printReportBtn.getStyleClass().add("welcome-report-button");

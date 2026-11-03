@@ -194,6 +194,35 @@ final class ClubRepository {
         }
     }
 
+    List<GymRepository.ClassSeat> availableClasses(Integer includeClassId) throws SQLException {
+        String sql = SubscriptionRules.apply("""
+                SELECT c.id, c.title, a.id activity_id, a.name_ar, a.name_en, COALESCE(co.name, '-') coach,
+                       c.day_of_week, c.start_time, c.end_time, c.capacity,
+                       (SELECT count(*) FROM subscriptions s
+                        WHERE s.class_id = c.id AND s.status IN ('ACTIVE', 'FROZEN') AND {USABLE}) taken
+                FROM class_schedule c JOIN activities a ON a.id = c.activity_id
+                LEFT JOIN coaches co ON co.id = c.coach_id
+                WHERE c.active = 1
+                ORDER BY c.day_of_week, c.start_time, c.title
+                """, "s.");
+        try (Connection connection = DatabaseConnection.open();
+                Statement statement = connection.createStatement();
+                ResultSet result = statement.executeQuery(sql)) {
+            List<GymRepository.ClassSeat> rows = new ArrayList<>();
+            while (result.next()) {
+                GymRepository.ClassSeat seat = new GymRepository.ClassSeat(result.getInt("id"),
+                        result.getString("title"), result.getInt("activity_id"), result.getString("name_ar"),
+                        result.getString("name_en"), result.getString("coach"), result.getInt("day_of_week"),
+                        result.getString("start_time"), result.getString("end_time"),
+                        result.getInt("capacity"), result.getInt("taken"));
+                if (seat.free() > 0 || (includeClassId != null && includeClassId == seat.id())) {
+                    rows.add(seat);
+                }
+            }
+            return rows;
+        }
+    }
+
     List<GymRepository.Payroll> payroll(YearMonth month) throws SQLException {
         String sql = """
                 SELECT u.id, 'USER' employee_type, u.full_name employee_name, u.role,

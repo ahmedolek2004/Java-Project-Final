@@ -106,6 +106,18 @@ public final class DatabaseConnection {
                     )
                     """);
             statement.execute("""
+                    CREATE TABLE IF NOT EXISTS plans (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        plan_type TEXT NOT NULL CHECK(plan_type IN ('TIME_BASED', 'SESSION_BASED')),
+                        duration_months INTEGER,
+                        total_sessions INTEGER,
+                        price REAL NOT NULL CHECK(price >= 0),
+                        CHECK((plan_type = 'TIME_BASED' AND duration_months > 0)
+                              OR (plan_type = 'SESSION_BASED' AND total_sessions > 0))
+                    )
+                    """);
+            statement.execute("""
                     CREATE TABLE IF NOT EXISTS payroll_payments (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         employee_type TEXT NOT NULL CHECK(employee_type IN ('USER', 'COACH')),
@@ -154,6 +166,8 @@ public final class DatabaseConnection {
             ensureColumn(connection, "subscriptions", "activity_id", "INTEGER REFERENCES activities(id) ON DELETE SET NULL");
             ensureColumn(connection, "payments", "subscription_id",
                     "INTEGER REFERENCES subscriptions(id) ON DELETE SET NULL");
+            ensureColumn(connection, "subscriptions", "class_id",
+                    "INTEGER REFERENCES class_schedule(id) ON DELETE SET NULL");
             AttendanceDateMigration.apply(connection);
         }
     }
