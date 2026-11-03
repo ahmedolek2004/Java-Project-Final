@@ -52,7 +52,6 @@ com.gym.system
 │   ├── DashboardController.java           // FXML Controller for shell layout & topbar
 │   ├── LoginController.java               // FXML Controller for sign-in screen
 │   ├── PrintController.java               // Paper printing (Cards, Invoices, Reports)
-│   ├── FormDialog.java                    // Generic modal dialog builder with validation
 │   │
 │   ├── page/                              // Modular Self-Contained Views
 │   │   ├── DashboardPage.java             // Metric summary, charts, quick actions

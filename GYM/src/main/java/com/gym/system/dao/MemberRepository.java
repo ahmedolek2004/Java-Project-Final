@@ -194,6 +194,44 @@ final class MemberRepository implements MemberDAO {
         }
     }
 
+    @Override
+    public void deleteMember(int id) throws SQLException {
+        if (id <= 0) {
+            throw new IllegalArgumentException("Invalid member ID.");
+        }
+        try (Connection connection = DatabaseConnection.open()) {
+            connection.setAutoCommit(false);
+            try {
+                // Attendance references both the member and subscription, so remove it first.
+                try (PreparedStatement attendance = connection.prepareStatement(
+                        "DELETE FROM attendance WHERE member_id = ?")) {
+                    attendance.setInt(1, id);
+                    attendance.executeUpdate();
+                }
+                // Payments are intentionally retained; their member/subscription references
+                // are configured with ON DELETE SET NULL in the original schema.
+                try (PreparedStatement subscriptions = connection.prepareStatement(
+                        "DELETE FROM subscriptions WHERE member_id = ?")) {
+                    subscriptions.setInt(1, id);
+                    subscriptions.executeUpdate();
+                }
+                try (PreparedStatement member = connection.prepareStatement(
+                        "DELETE FROM members WHERE id = ?")) {
+                    member.setInt(1, id);
+                    if (member.executeUpdate() == 0) {
+                        throw new SQLException("Member not found.");
+                    }
+                }
+                connection.commit();
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        }
+    }
+
     private static String currentSubscriptionId(String memberReference) {
         return """
                 COALESCE((SELECT s2.id FROM subscriptions s2

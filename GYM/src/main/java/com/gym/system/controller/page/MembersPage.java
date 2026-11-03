@@ -212,6 +212,10 @@ public class MembersPage {
                          TableView<GymRepository.MemberRow> table, int memberId) {
         try {
             masterList.setAll(memberService.getAllMembers());
+            if (memberId <= 0) {
+                table.getSelectionModel().clearSelection();
+                return;
+            }
             for (GymRepository.MemberRow row : table.getItems()) {
                 if (row.id() == memberId) {
                     table.getSelectionModel().select(row);

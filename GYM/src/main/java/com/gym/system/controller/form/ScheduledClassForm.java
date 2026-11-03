@@ -1,11 +1,15 @@
 package com.gym.system.controller.form;
 
-import com.gym.system.controller.FormDialog;
+import com.gym.system.controller.WizardDialog;
 import com.gym.system.dao.GymRepository;
+
 import javafx.collections.FXCollections;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -18,105 +22,98 @@ public final class ScheduledClassForm {
             int dayOfWeek, String startTime, String endTime, int capacity
     ) {}
 
-    public static Optional<ScheduledClassData> showAdd(
-            List<GymRepository.ActivityRow> activities,
-            List<GymRepository.CoachRow> coaches,
-            boolean isDark, boolean isArabic, Function<String, String> t) {
+    public static Optional<ScheduledClassData> showAdd(List<GymRepository.ActivityRow> activities,
+            List<GymRepository.CoachRow> coaches, boolean isDark, boolean isArabic, Function<String, String> t) {
         return showForm(t.apply("schedule.add"), null, activities, coaches, isDark, isArabic, t);
     }
 
-    public static Optional<ScheduledClassData> showEdit(
-            GymRepository.ScheduledClass existing,
-            List<GymRepository.ActivityRow> activities,
-            List<GymRepository.CoachRow> coaches,
+    public static Optional<ScheduledClassData> showEdit(GymRepository.ScheduledClass existing,
+            List<GymRepository.ActivityRow> activities, List<GymRepository.CoachRow> coaches,
             boolean isDark, boolean isArabic, Function<String, String> t) {
         return showForm(t.apply("schedule.edit"), existing, activities, coaches, isDark, isArabic, t);
     }
 
-    private static Optional<ScheduledClassData> showForm(
-            String title, GymRepository.ScheduledClass existing,
-            List<GymRepository.ActivityRow> activities,
-            List<GymRepository.CoachRow> coaches,
+    private static Optional<ScheduledClassData> showForm(String title, GymRepository.ScheduledClass existing,
+            List<GymRepository.ActivityRow> activities, List<GymRepository.CoachRow> coaches,
             boolean isDark, boolean isArabic, Function<String, String> t) {
         if (activities == null || activities.isEmpty()) return Optional.empty();
 
-        TextField titleField = new TextField(existing != null ? existing.title() : "");
-
-        ComboBox<String> activityBox = new ComboBox<>();
-        int selectedActIdx = 0;
+        TextField classTitle = new TextField(existing == null ? "" : existing.title());
+        ComboBox<String> activity = new ComboBox<>();
+        int activityIndex = 0;
         for (int i = 0; i < activities.size(); i++) {
-            GymRepository.ActivityRow act = activities.get(i);
-            String actName = isArabic ? act.nameArabic() : act.nameEnglish();
-            activityBox.getItems().add(act.id() + " | " + actName);
-            if (existing != null && (act.nameEnglish().equalsIgnoreCase(existing.activity()) || act.nameArabic().equalsIgnoreCase(existing.activity()))) {
-                selectedActIdx = i;
-            }
+            GymRepository.ActivityRow row = activities.get(i);
+            String label = isArabic ? row.nameArabic() : row.nameEnglish();
+            activity.getItems().add(row.id() + " | " + label);
+            if (existing != null && (row.nameEnglish().equalsIgnoreCase(existing.activity())
+                    || row.nameArabic().equalsIgnoreCase(existing.activity()))) activityIndex = i;
         }
-        activityBox.getSelectionModel().select(selectedActIdx);
+        activity.getSelectionModel().select(activityIndex);
 
-        ComboBox<String> coachBox = new ComboBox<>();
-        coachBox.getItems().add(t.apply("common.none"));
-        int selectedCoachIdx = 0;
+        ComboBox<String> coach = new ComboBox<>();
+        coach.getItems().add(t.apply("common.none"));
+        int coachIndex = 0;
         if (coaches != null) {
             for (int i = 0; i < coaches.size(); i++) {
-                GymRepository.CoachRow coach = coaches.get(i);
-                coachBox.getItems().add(coach.id() + " | " + coach.name());
-                if (existing != null && coach.name().equalsIgnoreCase(existing.coach())) {
-                    selectedCoachIdx = i + 1;
-                }
+                GymRepository.CoachRow row = coaches.get(i);
+                coach.getItems().add(row.id() + " | " + row.name());
+                if (existing != null && row.name().equalsIgnoreCase(existing.coach())) coachIndex = i + 1;
             }
         }
-        coachBox.getSelectionModel().select(selectedCoachIdx);
+        coach.getSelectionModel().select(coachIndex);
 
-        ComboBox<String> dayBox = new ComboBox<>(FXCollections.observableArrayList(
-                "1 - " + t.apply("day.1"),
-                "2 - " + t.apply("day.2"),
-                "3 - " + t.apply("day.3"),
-                "4 - " + t.apply("day.4"),
-                "5 - " + t.apply("day.5"),
-                "6 - " + t.apply("day.6"),
-                "7 - " + t.apply("day.7")
-        ));
-        dayBox.getSelectionModel().select(existing != null && existing.dayOfWeek() >= 1 && existing.dayOfWeek() <= 7
+        ComboBox<String> day = new ComboBox<>(FXCollections.observableArrayList(
+                "1 - " + t.apply("day.1"), "2 - " + t.apply("day.2"), "3 - " + t.apply("day.3"),
+                "4 - " + t.apply("day.4"), "5 - " + t.apply("day.5"), "6 - " + t.apply("day.6"),
+                "7 - " + t.apply("day.7")));
+        day.getSelectionModel().select(existing != null && existing.dayOfWeek() >= 1 && existing.dayOfWeek() <= 7
                 ? existing.dayOfWeek() - 1 : 0);
 
-        TextField startField = new TextField(existing != null ? existing.startTime() : "09:00");
-        TextField endField = new TextField(existing != null ? existing.endTime() : "10:00");
-        TextField capacityField = new TextField(existing != null ? String.valueOf(existing.capacity()) : "16");
+        TextField start = new TextField(existing == null ? "09:00" : existing.startTime());
+        TextField end = new TextField(existing == null ? "10:00" : existing.endTime());
+        TextField capacity = new TextField(existing == null ? "16" : String.valueOf(existing.capacity()));
 
-        List<String> values = FormDialog.show(title, isDark, isArabic,
-                FormDialog.field(t.apply("schedule.class"), titleField),
-                FormDialog.field(t.apply("activity.title"), activityBox),
-                FormDialog.field(t.apply("coach.name"), coachBox),
-                FormDialog.field(t.apply("schedule.day"), dayBox),
-                FormDialog.field(t.apply("schedule.start"), startField),
-                FormDialog.field(t.apply("schedule.end"), endField),
-                FormDialog.field(t.apply("schedule.capacity"), capacityField)
-        );
+        GridPane grid = FormGrid.create();
+        FormGrid.addRow(grid, 0, t.apply("schedule.class"), classTitle);
+        FormGrid.addRow(grid, 1, t.apply("activity.title"), activity);
+        FormGrid.addRow(grid, 2, t.apply("coach.name"), coach);
+        FormGrid.addRow(grid, 3, t.apply("schedule.day"), day);
+        FormGrid.addRow(grid, 4, t.apply("schedule.start"), start);
+        FormGrid.addRow(grid, 5, t.apply("schedule.end"), end);
+        FormGrid.addRow(grid, 6, t.apply("schedule.capacity"), capacity);
 
-        if (values.isEmpty()) return Optional.empty();
-
-        String classTitle = values.get(0).trim();
-        if (classTitle.isEmpty()) return Optional.empty();
+        boolean saved = WizardDialog.show(title, title, isDark, isArabic, t, List.of(
+                new WizardDialog.Step(title, grid, () -> {
+                    if (classTitle.getText().isBlank()) return isArabic ? "يرجى إدخال اسم الحصة." : "Class title is required.";
+                    if (activity.getValue() == null || day.getValue() == null)
+                        return isArabic ? "يرجى اختيار النشاط واليوم." : "Select an activity and a day.";
+                    try {
+                        LocalTime from = LocalTime.parse(start.getText().trim());
+                        LocalTime to = LocalTime.parse(end.getText().trim());
+                        int seats = Integer.parseInt(capacity.getText().trim());
+                        if (!from.isBefore(to)) return isArabic ? "وقت النهاية يجب أن يكون بعد وقت البداية." : "End time must be after start time.";
+                        if (seats <= 0) return isArabic ? "السعة يجب أن تكون أكبر من صفر." : "Capacity must be greater than zero.";
+                    } catch (DateTimeParseException ex) {
+                        return isArabic ? "أدخل الوقت بصيغة HH:mm." : "Enter time in HH:mm format.";
+                    } catch (NumberFormatException ex) {
+                        return isArabic ? "أدخل سعة صحيحة." : "Enter a valid capacity.";
+                    }
+                    return null;
+                })
+        ));
+        if (!saved) return Optional.empty();
 
         try {
-            int actId = Integer.parseInt(values.get(1).substring(0, values.get(1).indexOf(" | ")));
-            Integer coachId = null;
-            String coachVal = values.get(2);
-            if (coachVal != null && !coachVal.equals(t.apply("common.none")) && coachVal.contains(" | ")) {
-                coachId = Integer.parseInt(coachVal.substring(0, coachVal.indexOf(" | ")));
-            }
-
-            int dayOfWeek = Integer.parseInt(values.get(3).substring(0, 1));
-            String startTime = values.get(4).trim();
-            String endTime = values.get(5).trim();
-            int capacity = Integer.parseInt(values.get(6).trim());
-
-            if (startTime.compareTo(endTime) >= 0 || capacity <= 0) return Optional.empty();
-
-            int id = existing != null ? existing.id() : 0;
-            return Optional.of(new ScheduledClassData(id, classTitle, actId, coachId, dayOfWeek, startTime, endTime, capacity));
-        } catch (Exception e) {
+            int activityId = Integer.parseInt(activity.getValue().substring(0, activity.getValue().indexOf(" | ")));
+            String coachValue = coach.getValue();
+            Integer coachId = coachValue == null || coachValue.equals(t.apply("common.none")) ? null
+                    : Integer.parseInt(coachValue.substring(0, coachValue.indexOf(" | ")));
+            int dayNumber = Integer.parseInt(day.getValue().substring(0, day.getValue().indexOf(" - ")));
+            return Optional.of(new ScheduledClassData(existing == null ? 0 : existing.id(),
+                    classTitle.getText().trim(), activityId, coachId, dayNumber,
+                    start.getText().trim(), end.getText().trim(),
+                    Integer.parseInt(capacity.getText().trim())));
+        } catch (RuntimeException ex) {
             return Optional.empty();
         }
     }

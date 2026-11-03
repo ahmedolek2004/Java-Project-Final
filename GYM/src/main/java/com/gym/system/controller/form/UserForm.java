@@ -1,11 +1,13 @@
 package com.gym.system.controller.form;
 
-import com.gym.system.controller.FormDialog;
+import com.gym.system.controller.WizardDialog;
 import com.gym.system.model.User;
+
 import javafx.collections.FXCollections;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,87 +20,89 @@ public final class UserForm {
     public record EditUserData(String fullName, String role, String phone, double salary) {}
 
     public static Optional<NewUserData> showAdd(boolean isDark, boolean isArabic, Function<String, String> t) {
-        TextField usernameField = new TextField();
-        TextField nameField = new TextField();
-        PasswordField passwordField = new PasswordField();
-        ComboBox<String> roleBox = new ComboBox<>(FXCollections.observableArrayList(
-                t.apply("role.admin"),
-                t.apply("role.receptionist")
-        ));
-        roleBox.getSelectionModel().selectFirst();
-        TextField phoneField = new TextField();
-        TextField salaryField = new TextField("0");
+        TextField username = new TextField();
+        TextField name = new TextField();
+        PasswordField password = new PasswordField();
+        ComboBox<String> role = new ComboBox<>(FXCollections.observableArrayList(
+                t.apply("role.admin"), t.apply("role.receptionist")));
+        role.getSelectionModel().selectFirst();
+        TextField phone = new TextField();
+        TextField salary = new TextField("0");
 
-        List<String> values = FormDialog.show(t.apply("team.add"), isDark, isArabic,
-                FormDialog.field(t.apply("login.username"), usernameField),
-                FormDialog.field(t.apply("members.name"), nameField),
-                FormDialog.field(t.apply("team.password"), passwordField),
-                FormDialog.field(t.apply("team.role"), roleBox),
-                FormDialog.field(t.apply("members.phone"), phoneField),
-                FormDialog.field(t.apply("team.salary"), salaryField)
-        );
+        GridPane grid = FormGrid.create();
+        FormGrid.addRow(grid, 0, t.apply("login.username"), username);
+        FormGrid.addRow(grid, 1, t.apply("members.name"), name);
+        FormGrid.addRow(grid, 2, t.apply("team.password"), password);
+        FormGrid.addRow(grid, 3, t.apply("team.role"), role);
+        FormGrid.addRow(grid, 4, t.apply("members.phone"), phone);
+        FormGrid.addRow(grid, 5, t.apply("team.salary"), salary);
 
-        if (values.isEmpty()) return Optional.empty();
+        boolean saved = WizardDialog.show(t.apply("team.add"), t.apply("team.add"), isDark, isArabic, t,
+                List.of(new WizardDialog.Step(t.apply("team.add"), grid, () -> {
+                    if (username.getText().isBlank() || name.getText().isBlank())
+                        return isArabic ? "اسم المستخدم والاسم الكامل مطلوبان." : "Username and full name are required.";
+                    if (password.getText().length() < 8)
+                        return isArabic ? "كلمة المرور يجب ألا تقل عن 8 أحرف." : "Password must be at least 8 characters.";
+                    return validateSalary(salary.getText(), isArabic);
+                })));
+        if (!saved) return Optional.empty();
 
-        String username = values.get(0).trim();
-        String name = values.get(1).trim();
-        String password = values.get(2);
-        if (username.isEmpty() || name.isEmpty() || password == null || password.length() < 8) {
-            return Optional.empty();
-        }
-
-        String role = values.get(3).equals(t.apply("role.admin")) ? "ADMIN" : "RECEPTIONIST";
-        try {
-            double salary = Double.parseDouble(values.get(5).trim());
-            return Optional.of(new NewUserData(username, password.toCharArray(), name, role, values.get(4).trim(), salary));
-        } catch (Exception e) {
-            return Optional.empty();
-        }
+        double salaryValue = Double.parseDouble(salary.getText().trim());
+        String roleValue = role.getSelectionModel().getSelectedIndex() == 0 ? "ADMIN" : "RECEPTIONIST";
+        return Optional.of(new NewUserData(username.getText().trim(), password.getText().toCharArray(),
+                name.getText().trim(), roleValue, phone.getText().trim(), salaryValue));
     }
 
-    public static Optional<EditUserData> showEdit(User existing, boolean isDark, boolean isArabic, Function<String, String> t) {
+    public static Optional<EditUserData> showEdit(User existing, boolean isDark, boolean isArabic,
+                                                  Function<String, String> t) {
         if (existing == null) return Optional.empty();
 
-        TextField nameField = new TextField(existing.fullName());
-        ComboBox<String> roleBox = new ComboBox<>(FXCollections.observableArrayList(
-                t.apply("role.admin"),
-                t.apply("role.receptionist")
-        ));
-        roleBox.setValue("ADMIN".equalsIgnoreCase(existing.role()) ? t.apply("role.admin") : t.apply("role.receptionist"));
+        TextField name = new TextField(existing.fullName());
+        ComboBox<String> role = new ComboBox<>(FXCollections.observableArrayList(
+                t.apply("role.admin"), t.apply("role.receptionist")));
+        role.setValue("ADMIN".equalsIgnoreCase(existing.role()) ? t.apply("role.admin") : t.apply("role.receptionist"));
+        TextField phone = new TextField(existing.phone() == null ? "" : existing.phone());
+        TextField salary = new TextField(String.valueOf(existing.salary()));
 
-        TextField phoneField = new TextField(existing.phone() != null ? existing.phone() : "");
-        TextField salaryField = new TextField(String.valueOf(existing.salary()));
+        GridPane grid = FormGrid.create();
+        FormGrid.addRow(grid, 0, t.apply("members.name"), name);
+        FormGrid.addRow(grid, 1, t.apply("team.role"), role);
+        FormGrid.addRow(grid, 2, t.apply("members.phone"), phone);
+        FormGrid.addRow(grid, 3, t.apply("team.salary"), salary);
 
-        List<String> values = FormDialog.show(t.apply("team.edit"), isDark, isArabic,
-                FormDialog.field(t.apply("members.name"), nameField),
-                FormDialog.field(t.apply("team.role"), roleBox),
-                FormDialog.field(t.apply("members.phone"), phoneField),
-                FormDialog.field(t.apply("team.salary"), salaryField)
-        );
+        boolean saved = WizardDialog.show(t.apply("team.edit"), t.apply("team.edit"), isDark, isArabic, t,
+                List.of(new WizardDialog.Step(t.apply("team.edit"), grid, () -> {
+                    if (name.getText().isBlank()) return isArabic ? "يرجى إدخال الاسم الكامل." : "Full name is required.";
+                    return validateSalary(salary.getText(), isArabic);
+                })));
+        if (!saved) return Optional.empty();
 
-        if (values.isEmpty()) return Optional.empty();
-
-        String name = values.get(0).trim();
-        if (name.isEmpty()) return Optional.empty();
-
-        String role = values.get(1).equals(t.apply("role.admin")) ? "ADMIN" : "RECEPTIONIST";
-        try {
-            double salary = Double.parseDouble(values.get(3).trim());
-            return Optional.of(new EditUserData(name, role, values.get(2).trim(), salary));
-        } catch (Exception e) {
-            return Optional.empty();
-        }
+        return Optional.of(new EditUserData(name.getText().trim(),
+                role.getSelectionModel().getSelectedIndex() == 0 ? "ADMIN" : "RECEPTIONIST",
+                phone.getText().trim(), Double.parseDouble(salary.getText().trim())));
     }
 
     public static Optional<char[]> showChangePassword(boolean isDark, boolean isArabic, Function<String, String> t) {
-        PasswordField passField = new PasswordField();
-        List<String> values = FormDialog.show(t.apply("team.changePassword"), isDark, isArabic,
-                FormDialog.field(t.apply("team.password"), passField)
-        );
+        PasswordField password = new PasswordField();
+        GridPane grid = FormGrid.create();
+        FormGrid.addRow(grid, 0, t.apply("team.password"), password);
 
-        if (values.isEmpty() || values.get(0).length() < 8) {
-            return Optional.empty();
+        boolean saved = WizardDialog.show(t.apply("team.changePassword"), t.apply("team.changePassword"),
+                isDark, isArabic, t, List.of(new WizardDialog.Step(t.apply("team.changePassword"), grid, () ->
+                password.getText().length() < 8
+                        ? (isArabic ? "كلمة المرور يجب ألا تقل عن 8 أحرف." : "Password must be at least 8 characters.")
+                        : null)));
+        return saved ? Optional.of(password.getText().toCharArray()) : Optional.empty();
+    }
+
+    private static String validateSalary(String raw, boolean arabic) {
+        try {
+            double value = Double.parseDouble(raw.trim());
+            if (!Double.isFinite(value) || value < 0)
+                return arabic ? "الراتب يجب ألا يكون سالبًا." : "Salary must be zero or greater.";
+            return null;
+        } catch (NumberFormatException ex) {
+            return arabic ? "يرجى إدخال راتب صحيح." : "Enter a valid salary.";
         }
-        return Optional.of(values.get(0).toCharArray());
     }
 }

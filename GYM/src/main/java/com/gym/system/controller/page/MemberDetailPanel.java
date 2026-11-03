@@ -111,13 +111,16 @@ public final class MemberDetailPanel {
         checkInBtn.getStyleClass().add("primary-button");
         checkInBtn.setDisable(member.subscriptionId() == 0);
         Button editBtn = new Button(ctx.t("members.edit"));
+        Button deleteBtn = new Button(ctx.t("members.delete"));
+        deleteBtn.setVisible(ctx.isAdmin());
+        deleteBtn.setManaged(ctx.isAdmin());
         Button addSubscriptionBtn = new Button(ctx.t("subscription.add"));
         Button toggleBtn = new Button(ctx.t("subscription.freeze"));
         Button payBtn = new Button(ctx.t("finance.confirmReceived"));
         Button receiptBtn = new Button("🧾 " + ctx.t("receipt.view"));
         Button cardBtn = new Button("▦ " + ctx.t("card.view"));
-        FlowPane actions = new FlowPane(8, 8, checkInBtn, addSubscriptionBtn, editBtn, toggleBtn, payBtn, receiptBtn,
-                cardBtn);
+        FlowPane actions = new FlowPane(8, 8, checkInBtn, addSubscriptionBtn, editBtn, deleteBtn, toggleBtn, payBtn,
+                receiptBtn, cardBtn);
         box.getChildren().add(actions);
         if (pendingMessage != null) {
             Label banner = new Label(pendingMessage);
@@ -154,13 +157,14 @@ public final class MemberDetailPanel {
             }
         }
 
-        wireActions(member, history, checkInBtn, editBtn, addSubscriptionBtn, toggleBtn, payBtn, receiptBtn, cardBtn);
+        wireActions(member, history, checkInBtn, editBtn, deleteBtn, addSubscriptionBtn, toggleBtn, payBtn, receiptBtn,
+                cardBtn);
     }
 
     private void wireActions(GymRepository.MemberRow member,
                              TableView<GymRepository.MemberSubscription> history,
-                             Button checkInBtn, Button editBtn, Button addSubscriptionBtn, Button toggleBtn,
-                             Button payBtn, Button receiptBtn, Button cardBtn) {
+                             Button checkInBtn, Button editBtn, Button deleteBtn, Button addSubscriptionBtn,
+                             Button toggleBtn, Button payBtn, Button receiptBtn, Button cardBtn) {
         Runnable updateButtons = () -> {
             GymRepository.MemberSubscription selected = history == null ? null
                     : history.getSelectionModel().getSelectedItem();
@@ -207,6 +211,20 @@ public final class MemberDetailPanel {
                 });
             } catch (SQLException exception) {
                 ctx.showError().accept(ctx.t("error.load") + "\n" + exception.getMessage());
+            }
+        });
+
+        deleteBtn.setOnAction(event -> {
+            String prompt = ctx.t("members.deleteConfirm", member.fullName());
+            if (!Boolean.TRUE.equals(ctx.confirm().apply(prompt))) {
+                return;
+            }
+            try {
+                memberService.deleteMember(member.id());
+                onChanged.accept(-1);
+                ctx.showInfo().accept(ctx.t("members.deleted"));
+            } catch (SQLException | RuntimeException exception) {
+                ctx.showError().accept(ctx.t("error.delete") + "\n" + exception.getMessage());
             }
         });
 

@@ -160,6 +160,11 @@ public final class GymRepository implements GymDataAccess {
     }
 
     @Override
+    public void deleteMember(int id) throws SQLException {
+        memberRepository.deleteMember(id);
+    }
+
+    @Override
     public List<MemberSubscription> memberSubscriptions(int memberId) throws SQLException {
         return memberRepository.memberSubscriptions(memberId);
     }

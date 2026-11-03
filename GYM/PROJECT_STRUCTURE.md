@@ -10,7 +10,6 @@ This document outlines the project's directory structure, architectural layers, 
     - `DashboardController.java`
     - `LoginController.java`
     - `PrintController.java`
-    - `FormDialog.java`
   - `dao/` -> Data Access Objects and Repository pattern implementation (Database operations).
     - `GymDataAccess.java` (Interface)
     - `GymRepository.java` (Implementation)

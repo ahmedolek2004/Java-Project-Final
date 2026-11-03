@@ -13,11 +13,8 @@ import org.junit.jupiter.api.Test;
 import java.lang.reflect.Proxy;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.YearMonth;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
 

@@ -1,8 +1,10 @@
 package com.gym.system.controller.form;
 
-import com.gym.system.controller.FormDialog;
+import com.gym.system.controller.WizardDialog;
+
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -15,28 +17,30 @@ public final class ExpenseForm {
     public record ExpenseData(String description, double amount, LocalDate date) {}
 
     public static Optional<ExpenseData> show(boolean isDark, boolean isArabic, Function<String, String> t) {
-        TextField descField = new TextField();
-        TextField amountField = new TextField();
-        DatePicker datePicker = new DatePicker(LocalDate.now());
+        TextField description = new TextField();
+        TextField amount = new TextField();
+        DatePicker date = new DatePicker(LocalDate.now());
 
-        List<String> values = FormDialog.show(t.apply("finance.addExpense"), isDark, isArabic,
-                FormDialog.field(t.apply("finance.description"), descField),
-                FormDialog.field(t.apply("finance.amount"), amountField),
-                FormDialog.field(t.apply("finance.date"), datePicker)
-        );
+        GridPane grid = FormGrid.create();
+        FormGrid.addRow(grid, 0, t.apply("finance.description"), description);
+        FormGrid.addRow(grid, 1, t.apply("finance.amount"), amount);
+        FormGrid.addRow(grid, 2, t.apply("finance.date"), date);
 
-        if (values.isEmpty()) return Optional.empty();
+        boolean saved = WizardDialog.show(t.apply("finance.addExpense"), t.apply("finance.addExpense"),
+                isDark, isArabic, t, List.of(new WizardDialog.Step(t.apply("finance.addExpense"), grid, () -> {
+                    if (description.getText().isBlank()) return isArabic ? "يرجى إدخال وصف المصروف." : "Description is required.";
+                    try {
+                        double value = Double.parseDouble(amount.getText().trim());
+                        if (!Double.isFinite(value) || value <= 0) return isArabic ? "المبلغ يجب أن يكون أكبر من صفر." : "Amount must be greater than zero.";
+                    } catch (NumberFormatException ex) {
+                        return isArabic ? "يرجى إدخال مبلغ صحيح." : "Enter a valid amount.";
+                    }
+                    if (date.getValue() == null) return isArabic ? "يرجى اختيار التاريخ." : "Please select a date.";
+                    return null;
+                })));
+        if (!saved) return Optional.empty();
 
-        String desc = values.get(0).trim();
-        if (desc.isEmpty()) return Optional.empty();
-
-        try {
-            double amount = Double.parseDouble(values.get(1).trim());
-            if (amount < 0) return Optional.empty();
-            LocalDate date = values.get(2).isEmpty() ? LocalDate.now() : LocalDate.parse(values.get(2));
-            return Optional.of(new ExpenseData(desc, amount, date));
-        } catch (Exception e) {
-            return Optional.empty();
-        }
+        return Optional.of(new ExpenseData(description.getText().trim(),
+                Double.parseDouble(amount.getText().trim()), date.getValue()));
     }
 }

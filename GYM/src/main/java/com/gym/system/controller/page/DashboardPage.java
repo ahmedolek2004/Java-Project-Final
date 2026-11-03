@@ -5,7 +5,6 @@ import com.gym.system.controller.helper.MetricCardFactory;
 import com.gym.system.controller.helper.PageContext;
 import com.gym.system.controller.helper.TableFactory;
 import com.gym.system.dao.GymRepository;
-import com.gym.system.model.Member;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -17,7 +16,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.sql.SQLException;
-import java.util.Optional;
 
 public class DashboardPage {
     private final PageContext ctx;

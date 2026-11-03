@@ -60,6 +60,14 @@ public class MemberService {
         repository.updateMember(id, access.isAdmin() ? member : keepingStoredNotes(id, member));
     }
 
+    public void deleteMember(int id) throws SQLException {
+        access.requireAdmin();
+        if (id <= 0) {
+            throw new IllegalArgumentException("Invalid member ID.");
+        }
+        repository.deleteMember(id);
+    }
+
     private Member keepingStoredNotes(int id, Member member) throws SQLException {
         String storedNotes = repository.members().stream()
                 .filter(row -> row.id() == id)
